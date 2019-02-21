@@ -1,0 +1,31 @@
+<launch>
+
+  <node
+    pkg="rosbag"
+    type="reindex"
+    name="bag_fixer0"
+    args="/home/haonan/catkin_ws/src/raven_img_recorder/src/bagfiles/camera0_recorder.bag.active"
+  />
+
+  <node
+    pkg="rosbag"
+    type="reindex"
+    name="bag_fixer1"
+    args="/home/haonan/catkin_ws/src/raven_img_recorder/src/bagfiles/camera1_recorder.bag.active"
+  />
+
+  <node
+    pkg="rosbag"
+    type="reindex"
+    name="bag_fixer2"
+    args="/home/haonan/catkin_ws/src/raven_img_recorder/src/bagfiles/camera2_recorder.bag.active"
+  />
+
+  <node
+    pkg="rosbag"
+    type="reindex"
+    name="bag_fixer3"
+    args="/home/haonan/catkin_ws/src/raven_img_recorder/src/bagfiles/camera3_recorder.bag.active"
+  />
+
+</launch>

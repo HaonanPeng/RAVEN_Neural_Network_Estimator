@@ -1,0 +1,9 @@
+<launch>
+
+  <node
+    pkg="raven_img_recorder"
+    type="test_turtle_bag_reader.py"
+    name="test_turtle_bag_reader0"
+  />
+
+</launch>

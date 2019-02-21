@@ -1,0 +1,20 @@
+<launch>
+
+  <node name="usb_cam0" pkg="usb_cam" type="usb_cam_node" output="screen" >
+    <param name="video_device" value="/dev/video0" />
+    <param name="image_width" value="640" />
+    <param name="image_height" value="480" />
+    <param name="pixel_format" value="mjpeg" />
+    <param name="camera_frame_id" value="usb_cam" />
+    <param name="io_method" value="mmap"/>
+    <param name="framerate" value="30"/>
+
+  </node>
+  <node
+    pkg="image_view"
+    type="image_view"
+    name="image_view0"
+    args="image:=/usb_cam0/image_raw"
+  />
+
+</launch>

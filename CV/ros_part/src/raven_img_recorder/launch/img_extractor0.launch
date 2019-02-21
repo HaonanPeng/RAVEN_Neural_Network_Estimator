@@ -1,0 +1,10 @@
+<launch>
+
+  <node
+    pkg="raven_img_recorder"
+    type="img_bag_reader.py"
+    name="img_bag_reader0"
+    args="camera0"
+  />
+
+</launch>

@@ -1,0 +1,21 @@
+<launch>
+
+  <node
+    pkg="turtlesim"
+    type="turtlesim_node"
+    name="turtlesim"
+  />
+  <node
+    pkg="raven_img_recorder"
+    type="test_turtlesim_random"
+    name="velocity_publisher"
+  />
+
+  <node
+    pkg="topic_tools"
+    type="throttle"
+    name="throttle"
+    args="messages /turtle1/cmd_vel 100.0"
+  />
+  
+</launch>

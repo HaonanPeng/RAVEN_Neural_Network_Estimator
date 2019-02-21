@@ -1,0 +1,11 @@
+<launch>
+
+  <node
+    pkg="rosbag"
+    type="record"
+    name="camera0_recorder"
+    args="--lz4 -b 0 -O camera0_recorder.bag /usb_cam0/image_raw"
+  />
+
+</launch>
+

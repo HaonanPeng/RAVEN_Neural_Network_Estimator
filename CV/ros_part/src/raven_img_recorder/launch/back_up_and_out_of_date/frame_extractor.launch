@@ -1,0 +1,7 @@
+<launch>
+  <node pkg="rosbag" type="play" name="rosbag" required="true" args="/home/haonan/ros_bag_files/withtime1/camera0_recorder_withtime.bag"/>
+  <node name="extract" pkg="image_view" type="extract_images" respawn="false" required="true" output="screen" cwd="ROS_HOME">
+    <!--remap from="image" to="/camera_out/image"/-->
+    <remap from="image" to="/usb_cam0/image_raw/compressed"/>
+  </node>
+</launch>
