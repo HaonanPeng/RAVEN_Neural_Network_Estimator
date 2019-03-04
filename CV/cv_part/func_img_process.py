@@ -55,6 +55,12 @@ class img_processor:
     #ball center move range in system coordinate +- (mm/s)
     ball_move_range_3d = 20
     
+    # signal indicating the first call
+    first_call = 0
+    
+    # index seed, will be used in the filter
+    index_seed = None
+    
     
 
     # Load the time stamps and set initial values         
@@ -88,6 +94,7 @@ class img_processor:
         for idx_cam in range(self.camera_info.num_cam):
             self.time_eff_frame[idx_cam] = self.time_str_cur[idx_cam]
         
+        self.first_call = 0
         end_signal = 0
         
         return end_signal
@@ -107,6 +114,15 @@ class img_processor:
             self.time_str_cur[i] = self.time_str_vec[i][self.idx_cur[i]]
             
         self.frame_counter = self.frame_counter + 1
+        
+        if self.first_call == 0:
+            idx_cur_temp = self.idx_cur
+            self.index_seed = [idx_cur_temp]
+            self.first_call = 1
+        else:
+            idx_cur_temp = self.idx_cur
+            self.index_seed = np.append(self.index_seed, [idx_cur_temp], axis = 0)
+            
         print ("[IMG_PROCESSOR]:New index and time stamp are set:")    
         self.show_idx_time()
             
@@ -211,6 +227,10 @@ class img_processor:
         # Save cam3
         cam3_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3]) + "_index_" + str(self.idx_cur[3]) + ".jpg"
         cv2.imwrite (cam3_name, self.img_cur[3])
+        
+    def save_idx_seed(self):
+        file_name = self.bagfile_folder_path + "idx_seed.txt"
+        np.savetxt(file_name, self.idx_seed)
         
     def show_idx_time(self):
         print ("___________________________________________________________")
