@@ -59,7 +59,7 @@ class img_processor:
     first_call = 0
     
     # index seed, will be used in the filter
-    index_seed = None
+    idx_seed = None
     
     
 
@@ -117,11 +117,11 @@ class img_processor:
         
         if self.first_call == 0:
             idx_cur_temp = self.idx_cur
-            self.index_seed = [idx_cur_temp]
+            self.idx_seed = [idx_cur_temp]
             self.first_call = 1
         else:
             idx_cur_temp = self.idx_cur
-            self.index_seed = np.append(self.index_seed, [idx_cur_temp], axis = 0)
+            self.idx_seed = np.append(self.idx_seed, [idx_cur_temp], axis = 0)
             
         print ("[IMG_PROCESSOR]:New index and time stamp are set:")    
         self.show_idx_time()
