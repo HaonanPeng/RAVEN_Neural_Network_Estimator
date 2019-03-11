@@ -15,7 +15,7 @@ def load_images_from_folder(folder):
     return images
 
 print('File names:\n')
-folder = r'D:\iCloudDrive\Research Credit\Codes\Test - Full - Jan 23\bagfiles'
+folder = r'C:\Users\Xingjian Yang\iCloudDrive\Research Credit\Test - Full - March 6\img_test_sample'
 images = load_images_from_folder(folder)
 
 

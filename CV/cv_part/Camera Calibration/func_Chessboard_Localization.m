@@ -1,4 +1,6 @@
-   function [location,rotationMatrix] = func_Chessboard_Localization(I,cameraParams,squareSize)
+  
+
+function [location,rotationMatrix] = func_Chessboard_Localization(I,cameraParams,squareSize)
         [imagePoints,boardSize,imagesUsed] = detectCheckerboardPoints(I);
         figure()
         imshow(I);
@@ -7,5 +9,6 @@
         plot(imagePoints(1,1),imagePoints(1,2),'yo','LineWidth',2);
         worldPoints = generateCheckerboardPoints(boardSize, squareSize);
         [rotationMatrix,translationVector] = extrinsics(imagePoints,worldPoints,cameraParams);
+        
         [orientation,location] = extrinsicsToCameraPose(rotationMatrix,translationVector);
     end

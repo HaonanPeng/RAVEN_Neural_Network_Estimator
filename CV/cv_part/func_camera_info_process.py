@@ -4,7 +4,7 @@ import numpy as np
 import func_circle_detect as f_cd
 
 
-info_txt_path = 'camera_Info_txt/'
+info_txt_path = 'Camera_Info_txt/'
 
 info_P_chess = np.loadtxt(info_txt_path + 'info_P_chess.txt')
 info_R_chess = np.loadtxt(info_txt_path + 'info_R_chess.txt')
@@ -34,10 +34,10 @@ class camera_info_definition():
     
     Cvector = None #vector of balls center to camera (System coordinate) in one frame
 
-    circle_radius_threshold_decay = 0.8;
-    circle_radius_expand = 3; # ball moves per second, the reference radius expand +- 3 pixel 
-    circle_radius_max = 55  ;
-    circle_radius_min = 30;   
+    circle_radius_threshold_decay = 0.8
+    circle_radius_expand = 3 # ball moves per second, the reference radius expand +- 3 pixel 
+    circle_radius_max = 90  
+    circle_radius_min = 50  
     
     ball_move_range_2d = 100 #ball center move range in image plane +- (pixel/s)
     ball_move_range_2d_current = None # = dt * ball_move_range_2d (ball center move range between two frames) 
@@ -91,9 +91,8 @@ class camera_info:
             return None, img_result_list, self.eff_cam_num
         
 #        self.eff_cam_num = self.eff_cam_num.astype(int)
+        print(self.eff_cam_num)
         self.eff_cam_num = int(self.eff_cam_num)
-        
-        
         
         for idx_ball in range(self.num_ball): 
             ball_center[idx_ball,0:3] = np.squeeze(self.center_calculator(idx_ball)) 
@@ -118,7 +117,6 @@ class camera_info:
     
     
     def center_calculator(self,idx_ball):
-        self.eff_cam_num = [2,3]
         if len(self.eff_cam_num) == 2:
             center = self.point_between_2lines(self.cam[self.eff_cam_num[0]].P_cam,self.cam[self.eff_cam_num[1]].P_cam,self.cam[self.eff_cam_num[0]].Cvector[idx_ball],self.cam[self.eff_cam_num[1]].Cvector[idx_ball])
         

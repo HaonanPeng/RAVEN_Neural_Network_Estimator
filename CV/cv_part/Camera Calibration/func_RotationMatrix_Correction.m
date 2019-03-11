@@ -27,7 +27,7 @@ function eqn = findRotation(x)
 end
 
 RPY_old = rotm2eul(R_cam2chess);
-options = optimoptions('fsolve','FunctionTolerance',1e-100,'StepTolerance',1e-100,'MaxIter',10000,'Display','off');
+options = optimoptions('fsolve','FunctionTolerance',1e-100,'StepTolerance',1e-100,'MaxIter',100000,'Display','off');
 x = fsolve(@findRotation,RPY_old,options);
 
 Rx = [1 0 0; 0 cos(x(1)) -sin(x(1)); 0 sin(x(1)) cos(x(1))];

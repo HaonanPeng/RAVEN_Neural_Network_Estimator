@@ -31,7 +31,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     circle_radius_min = int(circle_radius_min)
     circle_radius_max = int(circle_radius_max)
 
-    gaussian_blur_para = 1
+    gaussian_blur_para = 2
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
@@ -57,7 +57,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
             return -1
     
         while end_signal_3 == 0:
-            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,60,
+            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,30,
                                    param1=100, param2=hough_para2, minRadius=circle_radius_min, maxRadius=circle_radius_max)
             if hough_para2_inc < 0.0000001:
                 end_signal_3 = 1
