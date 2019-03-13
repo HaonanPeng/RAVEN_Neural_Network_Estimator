@@ -5,7 +5,7 @@ import func_circle_detect as f_cd
 
 camera_info = f_cip.camera_info()
 
-def load_images_from_folder(folder):
+def load_images_from_folder(folder): 
     images = []
     for filename in os.listdir(folder):
         img = cv2.imread(os.path.join(folder,filename))

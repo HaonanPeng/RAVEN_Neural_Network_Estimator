@@ -21,7 +21,7 @@ class circle_class:
     g = np.array([0,0])
     r = np.array([0,0])
 
-def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
+def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, min_center_distance):
     
     # constant defination
     pi = math.pi
@@ -31,7 +31,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     circle_radius_min = int(circle_radius_min)
     circle_radius_max = int(circle_radius_max)
 
-    gaussian_blur_para = 2
+    gaussian_blur_para = 1
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
@@ -46,7 +46,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     end_signal_hough = 0
     while end_signal_hough == 0:
         gray = cv2.GaussianBlur(gray,(0, 0),gaussian_blur_para)
-        hough_para2 = 2;
+        hough_para2 = 2
         circles = np.zeros((2,2))
         hough_para2_inc = 5
         end_signal_3 = 0
@@ -57,12 +57,12 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
             return -1
     
         while end_signal_3 == 0:
-            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,30,
+            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,min_center_distance,
                                    param1=100, param2=hough_para2, minRadius=circle_radius_min, maxRadius=circle_radius_max)
             if hough_para2_inc < 0.0000001:
                 end_signal_3 = 1
                 gaussian_blur_para = gaussian_blur_para + 1
-#                print("[IMG]:Gaussian blur parameter increased")
+                #print("[IMG]:Gaussian blur parameter increased")
             try:
                 if len(circles[0]) > 3:
                     hough_para2 = hough_para2 + hough_para2_inc
@@ -79,16 +79,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
             except:
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
-                old_num_circles = 0
-            
-#            print("current hough_para2 = " )
-#            print(hough_para2)
-#            print("current hough_para2_inc = ")
-#            print(hough_para2_inc)
-        
-
-        
-             
+                old_num_circles = 0        
         
     for i in circles:
         counter=0
@@ -190,7 +181,6 @@ def color_detect4 (target_color, threshhold):
     b = int(target_color[0])
     g = int(target_color[1])
     r = int(target_color[2])
-
     
     if (abs(r-b)<20) & ((g-r)>30) & ((g-b)>40):
         color[0] = 1
