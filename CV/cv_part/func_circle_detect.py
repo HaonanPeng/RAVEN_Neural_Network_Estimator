@@ -182,8 +182,8 @@ def color_detect4 (target_color, threshhold):
     g = int(target_color[1])
     r = int(target_color[2])
     
-    # green
-    if (((b-r)>(-10)) & ((g-r)>30) & ((g-b)>25):
+    # green 
+    if ((b-r)>(-10)) & ((g-r)>30) & ((g-b)>25):
         color[0] = 1
     # yellow    
     if (abs(r-g)<40) & ((r-b)>50) & ((g-b)>60):
