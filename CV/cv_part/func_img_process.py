@@ -148,7 +148,7 @@ class img_processor:
                 #dt = dt.item()
                 # updat reference circle radius
                 self.camera_info.cam[idx_cam].circle_radius_max += dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                self.camera_info.cam[idx_cam].circle_radius_min -= -dt*self.camera_info.cam[idx_cam].circle_radius_expand 
+                self.camera_info.cam[idx_cam].circle_radius_min -= dt*self.camera_info.cam[idx_cam].circle_radius_expand 
                 # update reasonable ball distance, set the minimum as half of min_radius
                 self.camera_info.cam[idx_cam].min_center_distance -= self.camera_info.cam[idx_cam].min_center_distance_shrink*dt
                 if self.camera_info.cam[idx_cam].min_center_distance<(self.camera_info.cam[idx_cam].circle_radius_min/2):
@@ -160,7 +160,7 @@ class img_processor:
                 dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam] # delta time step 
                 # unupdat reference circle radius
                 self.camera_info.cam[idx_cam].circle_radius_max -= dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                self.camera_info.cam[idx_cam].circle_radius_min += -dt*self.camera_info.cam[idx_cam].circle_radius_expand          
+                self.camera_info.cam[idx_cam].circle_radius_min += dt*self.camera_info.cam[idx_cam].circle_radius_expand          
                 # unupdate reasonable ball distance, set the minimum as half of min_radius
                 if self.camera_info.cam[idx_cam].min_center_distance!=(self.camera_info.cam[idx_cam].circle_radius_min/2):
                     self.camera_info.cam[idx_cam].min_center_distance += self.camera_info.cam[idx_cam].min_center_distance_shrink*dt
@@ -298,6 +298,26 @@ class img_processor:
         print ("[IMG_PROCESSOR]:camera3 index: " + str(self.idx_cur[3]))
         print ("[IMG_PROCESSOR]:RAVEN index:   " + str(self.idx_cur[4]))
         print ("---------------------------------------------------")
+        
+    def show_cam_info(self):
+        print ("___________________________________________________________")
+        print ("[IMG_PROCESSOR]:Frame counter: " + str(self.frame_counter))
+        print ("---------------------------------------------------")
+        print ("[IMG_PROCESSOR]:Cam0 MAX radius: " + str(self.camera_info.cam[0].circle_radius_max))
+        print ("[IMG_PROCESSOR]:Cam0 MIN radius: " + str(self.camera_info.cam[0].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam0 distance: " + str(self.camera_info.cam[0].min_center_distance))
+        print ("---------------------------------------------------")
+        print ("[IMG_PROCESSOR]:Cam1 MAX radius: " + str(self.camera_info.cam[1].circle_radius_max))
+        print ("[IMG_PROCESSOR]:Cam1 MIN radius: " + str(self.camera_info.cam[1].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam1 distance: " + str(self.camera_info.cam[1].min_center_distance))
+        print ("---------------------------------------------------")
+        print ("[IMG_PROCESSOR]:Cam2 MAX radius: " + str(self.camera_info.cam[2].circle_radius_max))
+        print ("[IMG_PROCESSOR]:Cam2 MIN radius: " + str(self.camera_info.cam[2].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam2 distance: " + str(self.camera_info.cam[2].min_center_distance))
+        print ("---------------------------------------------------")
+        print ("[IMG_PROCESSOR]:Cam3 MAX radius: " + str(self.camera_info.cam[3].circle_radius_max))
+        print ("[IMG_PROCESSOR]:Cam3 MIN radius: " + str(self.camera_info.cam[3].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam3 distance: " + str(self.camera_info.cam[3].min_center_distance))
         
     def update_result(self):
         self.result_matrix[0] = self.frame_counter

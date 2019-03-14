@@ -31,7 +31,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
     circle_radius_min = int(circle_radius_min)
     circle_radius_max = int(circle_radius_max)
 
-    gaussian_blur_para = 2
+    gaussian_blur_para = 1
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
@@ -61,8 +61,8 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
                                    param1=100, param2=hough_para2, minRadius=circle_radius_min, maxRadius=circle_radius_max)
             if hough_para2_inc < 0.0000001:
                 end_signal_3 = 1
-                gaussian_blur_para = gaussian_blur_para + 1
-                #print("[IMG]:Gaussian blur parameter increased")
+#                gaussian_blur_para = gaussian_blur_para + 1
+                print("[IMG]:Gaussian blur parameter increased")
             try:
                 if len(circles[0]) > 3:
                     hough_para2 = hough_para2 + hough_para2_inc
