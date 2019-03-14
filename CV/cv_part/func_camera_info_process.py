@@ -82,17 +82,17 @@ class camera_info:
                 self.list_eff_cam += [idx_cam]  
                 self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
                 
-                self.cam[idx_cam].circle_radius_max = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_max+(1-self.cam[idx_cam].circle_radius_threshold_decay)*np.max(self.cam[idx_cam].img_ball_radius)
-                self.cam[idx_cam].circle_radius_min = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_min+(1-self.cam[idx_cam].circle_radius_threshold_decay)*np.min(self.cam[idx_cam].img_ball_radius) 
+#                self.cam[idx_cam].circle_radius_max = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_max+(1-self.cam[idx_cam].circle_radius_threshold_decay)*np.max(self.cam[idx_cam].img_ball_radius)
+#                self.cam[idx_cam].circle_radius_min = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_min+(1-self.cam[idx_cam].circle_radius_threshold_decay)*np.min(self.cam[idx_cam].img_ball_radius) 
 
         # update min_center_distance
         for idx_cam in range(self.num_cam):
             ball_center_distance = np.array([])
             for idx_ball in range(self.num_ball): 
-                for idx_ball_2 in range(idx_ball,self.num_ball):
+                for idx_ball_2 in range(idx_ball+1,self.num_ball):
                     ball_center_distance = np.append(ball_center_distance,np.linalg.norm(self.cam[idx_cam].img_ball_center[idx_ball,0:3]-self.cam[idx_cam].img_ball_center[idx_ball_2,0:3]))
             # select min_center_distance from the minimum of (center distances of balls and the half of the ball radius)
-            self.cam[idx_cam].min_center_distance = np.min(np.append(ball_center_distance,self.cam[idx_cam].img_ball_radius)/2)
+            self.cam[idx_cam].min_center_distance = np.max(np.append(np.min(ball_center_distance),self.cam[idx_cam].img_ball_radius/2))
         return img_result_list
          
     def ball_world_locate(self,list_selected_cam):
