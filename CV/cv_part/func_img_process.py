@@ -3,6 +3,7 @@ import math
 import numpy as np
 import time
 import func_camera_info_process
+import sys
 
 # Main part of image processing
 class img_processor:
@@ -19,6 +20,10 @@ class img_processor:
     cam3_time_str_path = cam3_folder_path + "time_stemp_camera3.txt"
     raven_data_path = bagfile_folder_path + "raven_state_time.txt"
     selected_frames_path = bagfile_folder_path + "selected_frames/"
+    selected_frames_path_cam0 = bagfile_folder_path + "selected_frames_cam0/"
+    selected_frames_path_cam1 = bagfile_folder_path + "selected_frames_cam1/"
+    selected_frames_path_cam2 = bagfile_folder_path + "selected_frames_cam2/"
+    selected_frames_path_cam3 = bagfile_folder_path + "selected_frames_cam3/"
     
     # Time stamps
     # For this and following defination, [0-3] means 4 cameras, and [4] means raven 
@@ -190,26 +195,25 @@ class img_processor:
                     dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam]
                     if move_distance_2d>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img):
                         uneff_sign = 1
-                        print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n')                             
+                        print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n',dt*self.camera_info.cam[idx_cam].ball_move_rate_img)                             
                 
                 # if the current frame contains a ball out of range, remove this frame from list_eff_cam
                 if uneff_sign == 1:                         
                     list_to_remove += [idx_cam]
             
             # remove uneffective camera frames
-            
             self.camera_info.list_eff_cam = [x for x in self.camera_info.list_eff_cam if x not in list_to_remove]
 
             if len(self.camera_info.list_eff_cam)<=1:
                 print('current effective frame <=1, system suspend\n')
-            ##########错误退出############################  
+                sys.exit(0)
         
         # generate the list of trusted frame  (effective in both last time and current time)
         list_cam_trust = [x for x in self.camera_info.list_eff_cam if x in self.camera_info.list_eff_cam_last] 
         
         if len(list_cam_trust)<=1:
             print('effective frame as reference <=1, system suspend\n')
-            ##########错误退出############################ 
+            sys.exit(0)
 
         # generate the list of frame back to work (uneffective in last time, effective in current time)
         list_cam_new = [x for x in self.camera_info.list_eff_cam if x not in list_cam_trust]
@@ -219,11 +223,11 @@ class img_processor:
 
         # verify if the back-to-work frame is effectve, yes then add 
         for i in range(len(list_cam_new)):
-            idx_cam_new = list_cam_new(i)
+            idx_cam_new = list_cam_new[i]
             pass_sign = 1
 
             for j in range(len(list_cam_trust)):
-                idx_cam_trust = list_cam_trust(j)
+                idx_cam_trust = list_cam_trust[j]
                 temp_ball_center = self.camera_info.ball_world_locate([idx_cam_new,idx_cam_trust])
                 ball_center_diff = np.linalg.norm(temp_ball_center-self.ball_center,axis=1)
 
@@ -255,16 +259,24 @@ class img_processor:
     def save_img(self):
         # Save cam0
         cam0_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam0_time_" + str(self.time_str_cur[0]) + "_index_" + str(self.idx_cur[0]) + ".jpg"
+        cam0_name_n = self.selected_frames_path_cam0  + "frame_" + str(self.frame_counter) + "_cam0_time_" + str(self.time_str_cur[0]) + "_index_" + str(self.idx_cur[0]) + ".jpg"
         cv2.imwrite (cam0_name, self.img_cur[0])
+        cv2.imwrite (cam0_name_n, self.img_cur[0])
         # Save cam1
         cam1_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam1_time_" + str(self.time_str_cur[1]) + "_index_" + str(self.idx_cur[1]) + ".jpg"
+        cam1_name_n = self.selected_frames_path_cam1 + "frame_" + str(self.frame_counter) + "_cam1_time_" + str(self.time_str_cur[1]) + "_index_" + str(self.idx_cur[1]) + ".jpg"
         cv2.imwrite (cam1_name, self.img_cur[1])
+        cv2.imwrite (cam1_name_n, self.img_cur[1])
         # Save cam2
         cam2_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam2_time_" + str(self.time_str_cur[2]) + "_index_" + str(self.idx_cur[2]) + ".jpg"
+        cam2_name_n = self.selected_frames_path_cam2 + "frame_" + str(self.frame_counter) + "_cam2_time_" + str(self.time_str_cur[2]) + "_index_" + str(self.idx_cur[2]) + ".jpg"
         cv2.imwrite (cam2_name, self.img_cur[2])
+        cv2.imwrite (cam2_name_n, self.img_cur[2])
         # Save cam3
         cam3_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3]) + "_index_" + str(self.idx_cur[3]) + ".jpg"
+        cam3_name_n = self.selected_frames_path_cam3 + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3]) + "_index_" + str(self.idx_cur[3]) + ".jpg"
         cv2.imwrite (cam3_name, self.img_cur[3])
+        cv2.imwrite (cam3_name_n, self.img_cur[3])
         
     def save_idx_seed(self):
         file_name = self.bagfile_folder_path + "idx_seed.txt"

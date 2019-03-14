@@ -31,7 +31,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
     circle_radius_min = int(circle_radius_min)
     circle_radius_max = int(circle_radius_max)
 
-    gaussian_blur_para = 1
+    gaussian_blur_para = 2
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
