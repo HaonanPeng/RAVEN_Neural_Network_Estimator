@@ -42,11 +42,11 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
     #cv2.waitKey(0)
     
     # denoise
-    img = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
+    img = cv2.GaussianBlur(img, (0,0), 4)
     end_signal_hough = 0
     while end_signal_hough == 0:
         gray = cv2.GaussianBlur(gray,(0, 0),gaussian_blur_para)
-        hough_para2 = 2
+        hough_para2 = 10
         circles = np.zeros((2,2))
         hough_para2_inc = 5
         end_signal_3 = 0
@@ -72,7 +72,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
                     hough_para2 = hough_para2 - hough_para2_inc
                     if old_num_circles >=3:
                         hough_para2_inc = hough_para2_inc/2
-                if (len(circles[0]) == 3) & (old_num_circles > 3) & (hough_para2_inc < 0.01):
+                if (len(circles[0]) == 3) & (old_num_circles > 3) & (hough_para2_inc < 0.1):
                     end_signal_3 = 1
                     end_signal_hough =1
                 old_num_circles = len(circles[0])
@@ -164,7 +164,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
     cv2.circle(img, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
     cv2.circle(img, (int(circle_centers[2][0]),int(circle_centers[2][1])), 1, (0, 0, 0), 1, 1, 0)
     
-    cv2.imwrite("out_put_img.jpg",img)    
+    #cv2.imwrite("out_put_img.jpg",img)    
     if showplot == 1:        
         cv2.imshow("show",img)
         #cv2.imshow("show",gray)
@@ -186,7 +186,7 @@ def color_detect4 (target_color, threshhold):
     if ((b-r)>(-10)) & ((g-r)>30) & ((g-b)>15):
         color[0] = 1
     # yellow    
-    if (abs(r-g)<40) & ((r-b)>50) & ((g-b)>60):
+    if (abs(r-g)<40) & ((r-b)>20) & ((g-b)>30):
         color[1] = 1
     # red     
     if ((r-g)>70) & ((r-b)>15) & ((b-g)>25):
