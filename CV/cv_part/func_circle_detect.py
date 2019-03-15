@@ -21,7 +21,7 @@ class circle_class:
     g = np.array([0,0])
     r = np.array([0,0])
 
-def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, min_center_distance):
+def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     
     # constant defination
     pi = math.pi
@@ -67,7 +67,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, m
             return -1
     
         while end_signal_3 == 0:
-            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,min_center_distance,
+            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,100,
                                    param1=100, param2=hough_para2, minRadius=circle_radius_min, maxRadius=circle_radius_max)
             if hough_para2_inc < 0.0000001:
                 end_signal_3 = 1
