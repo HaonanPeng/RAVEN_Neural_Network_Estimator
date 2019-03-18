@@ -35,16 +35,23 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
+    
+###############################################
+
     h, w = img.shape[:2]
 
-    red = np.asarray(img[:,:,2])
-    green = np.asarray(img[:,:,1])
-    blue = np.asarray(img[:,:,0])
-    ones = np.ones((h,w))
-    new = (ones-np.multiply((ones-red/255),(ones-green/255)))*255
-    gray = np.uint8(new) 
+    red = np.float32(img[:,:,2])
+    green = np.float32(img[:,:,1])
+    blue = np.float32(img[:,:,0])   
 
-    #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    channel_ball_0 = np.uint8((red-green).clip(min=0))
+    channel_ball_1 = np.uint8((green-red).clip(min=0))
+    channel_ball_2 = np.uint8(((red-blue).clip(min=0)-channel_ball_0).clip(min=0))  
+
+###############################################
+
+
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
    
     #Gaussian filter
     

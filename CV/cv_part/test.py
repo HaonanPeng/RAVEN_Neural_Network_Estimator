@@ -23,7 +23,7 @@ h, w = img.shape[:2]
 
 red = np.float32(img[:,:,2])
 green = np.float32(img[:,:,1])
-blue = np.float32(img[:,:,0])
+blue = np.float32(img[:,:,0])   
 
 ball_0 = np.uint8((red-green).clip(min=0))
 ball_1 = np.uint8((green-red).clip(min=0))
