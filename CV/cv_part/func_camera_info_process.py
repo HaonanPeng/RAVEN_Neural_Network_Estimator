@@ -74,7 +74,7 @@ class camera_info:
         img_result_list = [None, None, None, None]
         
         for idx_cam in range(self.num_cam):
-            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect (img_input_list[idx_cam], 0 , self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max,self.cam[idx_cam].min_center_distance)
+            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect (img_input_list[idx_cam], 0 , self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max)
 
             # all balls have been successfully detected 
             if np.sum(self.cam[idx_cam].img_ball_center)!=0:
