@@ -21,7 +21,260 @@ class circle_class:
     g = np.array([0,0])
     r = np.array([0,0])
 
-def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
+def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_radius_max):
+    
+    # constant defination
+    pi = math.pi
+    color_detect3_threshhold = 20
+    sample_number = 30
+    
+    circle_radius_min = np.int_(circle_radius_min)
+    circle_radius_max = np.int_(circle_radius_max)
+
+
+    
+    circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
+    
+    
+###############################################
+
+    h, w = img.shape[:2]
+    
+    img = cv2.GaussianBlur(img, (0,0), 1)
+
+    red = np.float32(img[:,:,2])
+    green = np.float32(img[:,:,1])
+    blue = np.float32(img[:,:,0])   
+
+    channel_ball_0 = np.uint8((red-green).clip(min=0))
+    channel_ball_1 = np.uint8((green-red).clip(min=0))
+    channel_ball_2 = np.uint8(((red-blue).clip(min=0)-channel_ball_0).clip(min=0))  
+
+###############################################
+
+    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    
+    # denoise for color image
+    img = cv2.GaussianBlur(img, (0,0), 4)
+    
+    circles_info = np.zeros([1,3,3]) # Initialize circles
+    
+    # Ball 0 channel-----------------------------------------------------------
+    gaussian_blur_para = 1
+    end_signal_hough = 0
+    while end_signal_hough == 0:
+        
+        hough_para2 = 10
+        hough_para2_inc = 5
+        end_signal_3 = 0
+        old_num_circles = 1000
+        
+        if gaussian_blur_para >=5:
+            print("[ERROR]:Hough circle detect failed")
+            return -1
+    
+        while end_signal_3 == 0:
+            circles = cv2.HoughCircles(channel_ball_0,cv2.HOUGH_GRADIENT,1,10,
+                                   param1=100, param2=hough_para2, minRadius=circle_radius_min[0], maxRadius=circle_radius_max[0])
+            if hough_para2_inc < 0.0001:
+                channel_ball_0 = cv2.GaussianBlur(channel_ball_0,(0, 0),1)
+                gaussian_blur_para = gaussian_blur_para + 1
+                end_signal_3 = 1
+                print("[IMG]:Gaussian blur parameter increased")
+            try:
+                if len(circles[0]) > 1:
+                    hough_para2 = hough_para2 + hough_para2_inc
+                    if old_num_circles <=1:
+                        hough_para2_inc = hough_para2_inc/2    
+                if len(circles[0]) <= 1:
+                    hough_para2 = hough_para2 - hough_para2_inc
+                    if old_num_circles >=1:
+                        hough_para2_inc = hough_para2_inc/2
+                if (len(circles[0]) == 1) & (old_num_circles > 1) & (hough_para2_inc < 0.01):
+                    end_signal_3 = 1
+                    end_signal_hough =1
+                old_num_circles = len(circles[0])
+            except:
+                hough_para2 = hough_para2 - hough_para2_inc
+                hough_para2_inc = hough_para2_inc/2
+                old_num_circles = 0
+    circles_info[0][0] = circles[0][0] 
+                
+    # Ball 1 channel-----------------------------------------------------------
+    gaussian_blur_para = 1
+    end_signal_hough = 0
+    while end_signal_hough == 0:
+        hough_para2 = 10
+        hough_para2_inc = 5
+        end_signal_3 = 0
+        old_num_circles = 1000
+        
+        if gaussian_blur_para >=5:
+            
+            print("[ERROR]:Hough circle detect failed")
+            return -1
+    
+        while end_signal_3 == 0:
+            circles = cv2.HoughCircles(channel_ball_1,cv2.HOUGH_GRADIENT,1,10,
+                                   param1=100, param2=hough_para2, minRadius=circle_radius_min[1], maxRadius=circle_radius_max[1])
+            if hough_para2_inc < 0.0001:
+                channel_ball_1 = cv2.GaussianBlur(channel_ball_1,(0, 0),1)
+                gaussian_blur_para = gaussian_blur_para + 1
+                end_signal_3 = 1
+#                gaussian_blur_para = gaussian_blur_para + 1
+                print("[IMG]:Gaussian blur parameter increased")
+            try:
+                if len(circles[0]) > 1:
+                    hough_para2 = hough_para2 + hough_para2_inc
+                    if old_num_circles <=1:
+                        hough_para2_inc = hough_para2_inc/2    
+                if len(circles[0]) <= 1:
+                    hough_para2 = hough_para2 - hough_para2_inc
+                    if old_num_circles >=1:
+                        hough_para2_inc = hough_para2_inc/2
+                if (len(circles[0]) == 1) & (old_num_circles > 1) & (hough_para2_inc < 0.01):
+                    end_signal_3 = 1
+                    end_signal_hough =1
+                old_num_circles = len(circles[0])
+            except:
+                hough_para2 = hough_para2 - hough_para2_inc
+                hough_para2_inc = hough_para2_inc/2
+                old_num_circles = 0     
+    circles_info[0][1] = circles[0][0] 
+                
+    # Ball 2 channel-----------------------------------------------------------
+    gaussian_blur_para = 1
+    end_signal_hough = 0
+    while end_signal_hough == 0:
+        hough_para2 = 10
+        hough_para2_inc = 5
+        end_signal_3 = 0
+        old_num_circles = 1000
+        
+        if gaussian_blur_para >=5:
+            print("[ERROR]:Hough circle detect failed")
+            return -1
+    
+        while end_signal_3 == 0:
+            circles = cv2.HoughCircles(channel_ball_2,cv2.HOUGH_GRADIENT,1,10,
+                                   param1=100, param2=hough_para2, minRadius=circle_radius_min[2], maxRadius=circle_radius_max[2])
+            if hough_para2_inc < 0.0001:
+                channel_ball_2 = cv2.GaussianBlur(channel_ball_2,(0, 0),1)
+                gaussian_blur_para = gaussian_blur_para + 1
+                end_signal_3 = 1
+#                gaussian_blur_para = gaussian_blur_para + 1
+                print("[IMG]:Gaussian blur parameter increased")
+            try:
+                if len(circles[0]) > 1:
+                    hough_para2 = hough_para2 + hough_para2_inc
+                    if old_num_circles <=1:
+                        hough_para2_inc = hough_para2_inc/2    
+                if len(circles[0]) <= 1:
+                    hough_para2 = hough_para2 - hough_para2_inc
+                    if old_num_circles >=1:
+                        hough_para2_inc = hough_para2_inc/2
+                if (len(circles[0]) == 1) & (old_num_circles > 1) & (hough_para2_inc < 0.01):
+                    end_signal_3 = 1
+                    end_signal_hough =1
+                old_num_circles = len(circles[0])
+            except:
+                hough_para2 = hough_para2 - hough_para2_inc
+                hough_para2_inc = hough_para2_inc/2
+                old_num_circles = 0 
+    circles_info[0][2] = circles[0][0] 
+        
+    for i in circles_info:
+        counter=0
+        for j in i: #extract center and radius of the three circles
+            circle_temp[counter].center = (int(j[0]), int(j[1]))
+            circle_temp[counter].radius = int(j[2])
+           
+            # draw center
+            #cv2.circle(img, circle_temp[counter].center, 3, (0, 255, 0), -1, 8, 0)
+            # 绘制圆轮廓
+            cv2.circle(img, circle_temp[counter].center, circle_temp[counter].radius, (255, 255, 255), 1, 1, 0)
+                
+            #sample points to detect color
+            for k in range(0, sample_number):
+                pointX = int(round(circle_temp[counter].center[0] + 0.8*circle_temp[counter].radius * np.sin (2*k*pi/sample_number)))
+                pointY = int(round(circle_temp[counter].center[1] + 0.8*circle_temp[counter].radius * np.cos (2*k*pi/sample_number)))
+                pointColor = img[pointY, pointX]  # [IMPORTANT] Notice that in the index, x and y are reversed
+                #detected_color = color_detect(pointColor, blue_ref, green_ref, red_ref, ref_threshhold)
+                detected_color = color_detect4(pointColor, color_detect3_threshhold)
+                
+                draw_color = img[pointY, pointX]
+                if np.sum(detected_color) > 1:
+                    draw_color = np.array((255,255,255))
+                elif np.sum(detected_color) == 0:
+                    draw_color = np.array((0,0,0))
+                draw_color = (float(draw_color[0]),float(draw_color[1]),float(draw_color[2]))
+                
+                circle_temp[counter].color_vec = circle_temp[counter].color_vec + detected_color
+                cv2.circle(img, (pointX, pointY), 1, draw_color, 1, 1, 0)
+                
+            counter = counter + 1
+    
+    # Color assign         
+    end_signal = 0    
+    counter2 = 0
+    filter1 = np.array([1, 1, 1])
+    booled_color_vec = [np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0])]
+    booled_color_vec[0] = boolize(circle_temp[0].color_vec)
+    booled_color_vec[1] = boolize(circle_temp[1].color_vec)
+    booled_color_vec[2] = boolize(circle_temp[2].color_vec)
+    
+    circle_centers = np.zeros((3,2))
+    circle_radius = np.zeros(3)
+
+        
+    if showplot == 1:        
+        cv2.imshow("img",img)
+        #cv2.imshow("show",gray)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows() 
+    
+    while end_signal != 1:
+        if sum(filter1 * booled_color_vec[counter2 % 3]) != 1:
+            counter2 = counter2 + 1
+            if counter2 > 50:
+                print("[ERROR]:Color assign failed, the can be because the colors are confusing, please check the threshold of the color dectect function")
+                return np.zeros((3, 2)), np.zeros(3), img
+            continue
+        else:
+            if (filter1 *booled_color_vec[counter2 % 3])[0] == 1: #The circle is blue
+                circle_centers[0] = circle_temp[counter2 % 3].center
+                circle_radius[0] = circle_temp[counter2 % 3].radius
+                filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+            elif (filter1 *booled_color_vec[counter2 % 3])[1] == 1:
+                circle_centers[1] = circle_temp[counter2 % 3].center
+                circle_radius[1] = circle_temp[counter2 % 3].radius
+                filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+            elif (filter1 *booled_color_vec[counter2 % 3])[2] == 1:
+                circle_centers[2] = circle_temp[counter2 % 3].center
+                circle_radius[2] = circle_temp[counter2 % 3].radius
+                filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+            else:
+                print("[ERROR] color assign failed")
+        if np.sum(filter1) == 0:
+            end_signal = 1
+        if counter2 > 50:
+            print("[ERROR]:Color assign failed, the can be because the colors are confusing, please check the threshold of the color dectect function")
+            return np.zeros((3, 2)), np.zeros(3), img
+        counter2 = counter2 + 1      
+
+    cv2.circle(img, (int(circle_centers[0][0]),int(circle_centers[0][1])), 1, (255, 50, 50), 1, 1, 0)
+    cv2.circle(img, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
+    cv2.circle(img, (int(circle_centers[2][0]),int(circle_centers[2][1])), 1, (0, 0, 0), 1, 1, 0)
+    
+    #cv2.imwrite("out_put_img.jpg",img)    
+    if showplot == 1:        
+        cv2.imshow("show",img)
+        #cv2.imshow("show",gray)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows() 
+    return circle_centers, circle_radius, img
+
+def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, min_center_distance):
     
     # constant defination
     pi = math.pi
@@ -35,23 +288,16 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
-    
-###############################################
-
     h, w = img.shape[:2]
 
-    red = np.float32(img[:,:,2])
-    green = np.float32(img[:,:,1])
-    blue = np.float32(img[:,:,0])   
+    red = np.asarray(img[:,:,2])
+    green = np.asarray(img[:,:,1])
+    blue = np.asarray(img[:,:,0])
+    ones = np.ones((h,w))
+    new = (ones-np.multiply((ones-red/255),(ones-green/255)))*255
+    gray = np.uint8(new) 
 
-    channel_ball_0 = np.uint8((red-green).clip(min=0))
-    channel_ball_1 = np.uint8((green-red).clip(min=0))
-    channel_ball_2 = np.uint8(((red-blue).clip(min=0)-channel_ball_0).clip(min=0))  
-
-###############################################
-
-
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
    
     #Gaussian filter
     
@@ -74,7 +320,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
             return -1
     
         while end_signal_3 == 0:
-            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,100,
+            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,min_center_distance,
                                    param1=100, param2=hough_para2, minRadius=circle_radius_min, maxRadius=circle_radius_max)
             if hough_para2_inc < 0.0000001:
                 end_signal_3 = 1
