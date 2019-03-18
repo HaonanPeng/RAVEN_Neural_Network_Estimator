@@ -46,9 +46,9 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     green = np.float32(img[:,:,1])
     blue = np.float32(img[:,:,0])   
 
-    channel_ball_0 = np.uint8((red-green).clip(min=0))
-    channel_ball_1 = np.uint8((green-red).clip(min=0))
-    channel_ball_2 = np.uint8(((red-blue).clip(min=0)-channel_ball_0).clip(min=0))  
+    channel_ball_2 = np.uint8((red-green).clip(min=0)) # red
+    channel_ball_0 = np.uint8((green-red).clip(min=0)) # green
+    channel_ball_1 = np.uint8(((red-blue).clip(min=0)-channel_ball_2).clip(min=0))  # yellow
 
 ###############################################
 
@@ -227,7 +227,8 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     circle_radius = np.zeros(3)
 
         
-    if showplot == 1:        
+    if showplot == 1:
+        cv2.imwrite("out_put_img_before_color_assign.jpg",img)   
         cv2.imshow("img",img)
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
@@ -266,8 +267,9 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     cv2.circle(img, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
     cv2.circle(img, (int(circle_centers[2][0]),int(circle_centers[2][1])), 1, (0, 0, 0), 1, 1, 0)
     
-    #cv2.imwrite("out_put_img.jpg",img)    
+     
     if showplot == 1:        
+        cv2.imwrite("out_put_img.jpg",img)   
         cv2.imshow("show",img)
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
