@@ -46,9 +46,58 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     green = np.float32(img[:,:,1])
     blue = np.float32(img[:,:,0])   
 
-    channel_ball_2 = np.uint8((red-green).clip(min=0)) # red
-    channel_ball_0 = np.uint8((green-red).clip(min=0)) # green
-    channel_ball_1 = np.uint8(((red-blue).clip(min=0)-channel_ball_2).clip(min=0))  # yellow
+# Old channel method ----------------------------------------------------------------------------------
+#    channel_ball_2 = np.uint8((red-green).clip(min=0)) # red
+#    channel_ball_0 = np.uint8((green-red).clip(min=0)) # green
+#    channel_ball_1 = np.uint8(((red-blue).clip(min=0)-channel_ball_2).clip(min=0))  # yellow
+    
+#    channel_ball_2 = np.uint8((red-green).clip(min=0)) # red
+#    channel_ball_0 = np.uint8((green-red).clip(min=0)) # green
+#    channel_ball_1 = np.uint8(((red-blue).clip(min=0)-2*channel_ball_2).clip(min=0))  # yellow
+# Old channel method ----------------------------------------------------------------------------------
+    
+    ref_color = np.array([[210,230,135],[90,250,230],[250,80,190]]) # green, yellow, red
+
+    num_ball = 3
+    channel = np.zeros((h,w,num_ball))
+    
+    for idx_ball in range(num_ball):
+        d_r = np.absolute(np.ones((h,w))*ref_color[idx_ball,2]-img[:,:,2])
+        d_g = np.absolute(np.ones((h,w))*ref_color[idx_ball,1]-img[:,:,1])
+        d_b = np.absolute(np.ones((h,w))*ref_color[idx_ball,0]-img[:,:,0])
+        
+#        d_r = np.square(d_r)
+#        d_g = np.square(d_g)
+#        d_b = np.square(d_b)
+        channel[:,:,idx_ball] = (np.ones((h,w))*255-(d_r+d_g+d_b)).clip(min=0)
+        
+    
+    #cv2.imshow("show",np.uint8(channel[:,:,1])) 
+    #cv2.waitKey(0)
+    #cv2.destroyAllWindows() 
+    
+    channel_new = np.zeros((h,w,num_ball))
+    for idx_ball in range(num_ball):
+        list_remain = list(range(num_ball))
+        list_remain.remove(idx_ball)
+        print(list_remain)
+        channel_remain_sum = np.zeros((h,w))
+        for i in range(len(list_remain)):
+            idx_ball_2 = list_remain[i]
+            channel_remain_sum += channel[:,:,idx_ball_2]
+        channel_remain_avg = channel_remain_sum/len(list_remain)
+        channel_new[:,:,idx_ball] = np.uint8((channel[:,:,idx_ball]-channel_remain_avg).clip(min=0))
+    channel_ball_0 = np.uint8(channel_new[:,:,0])
+    channel_ball_1 = np.uint8(channel_new[:,:,1])
+    channel_ball_2 = np.uint8(channel_new[:,:,2])
+    
+    if showplot ==1:
+        cv2.imshow("ball0",channel_ball_0)
+        cv2.imshow("ball1",channel_ball_1)
+        cv2.imshow("ball2",channel_ball_2)
+        #cv2.imshow("show",gray)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows() 
 
 ###############################################
 
@@ -98,6 +147,8 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
                 old_num_circles = 0
+            if showplot == 1:
+                print("Ball0: Current Hough para2 = " + str(hough_para2))
     circles_info[0][0] = circles[0][0] 
                 
     # Ball 1 channel-----------------------------------------------------------
@@ -140,6 +191,8 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
                 old_num_circles = 0     
+            if showplot == 1:
+                print("Ball1: Current Hougg para2 = " + str(hough_para2))
     circles_info[0][1] = circles[0][0] 
                 
     # Ball 2 channel-----------------------------------------------------------
@@ -180,7 +233,9 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
             except:
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
-                old_num_circles = 0 
+                old_num_circles = 0
+            if showplot == 1:
+                print("Ball2: Current Hough para2 = " + str(hough_para2))
     circles_info[0][2] = circles[0][0] 
         
     for i in circles_info:
