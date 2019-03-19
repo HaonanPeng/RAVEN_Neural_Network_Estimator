@@ -64,11 +64,16 @@ class img_processor:
     
     # index seed, will be used in the filter
     idx_seed = None
+    
+    time_difference = 1.18 # This is the difference between the two computers, if the 4 webcams are connected to one computer, this should be 0
+        
 
     # Load the time stamps and set initial values         
     def load_time_str(self):
-        cam0_time_str_vec = np.loadtxt(self.cam0_time_str_path)
-        cam1_time_str_vec = np.loadtxt(self.cam1_time_str_path)
+        
+        
+        cam0_time_str_vec = np.loadtxt(self.cam0_time_str_path) + self.time_difference
+        cam1_time_str_vec = np.loadtxt(self.cam1_time_str_path) + self.time_difference
         cam2_time_str_vec = np.loadtxt(self.cam2_time_str_path)
         cam3_time_str_vec = np.loadtxt(self.cam3_time_str_path)
         raven_time_str_vec = np.loadtxt(self.raven_data_path)
@@ -131,9 +136,9 @@ class img_processor:
     # Function to load images relative to current time stamp
     def load_img(self):
         # Load cam0
-        self.img_cur[0] = cv2.imread(self.cam0_folder_path + str("%.6f" % self.time_str_cur[0]) + ".jpg")
+        self.img_cur[0] = cv2.imread(self.cam0_folder_path + str("%.6f" % (self.time_str_cur[0] - self.time_difference)) + ".jpg")
         # Load cam1
-        self.img_cur[1] = cv2.imread(self.cam1_folder_path + str("%.6f" % self.time_str_cur[1]) + ".jpg")
+        self.img_cur[1] = cv2.imread(self.cam1_folder_path + str("%.6f" % (self.time_str_cur[1] - self.time_difference)) + ".jpg")
         # Load cam2
         self.img_cur[2] = cv2.imread(self.cam2_folder_path + str("%.6f" % self.time_str_cur[2]) + ".jpg")
         # Load cam3
