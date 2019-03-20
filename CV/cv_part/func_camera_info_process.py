@@ -34,12 +34,14 @@ class camera_info_definition():
     
     Cvector = None #vector of balls center to camera (System coordinate) in one frame
 
-    circle_radius_threshold_decay = 0.7
+    circle_radius_threshold_decay = 0
     circle_radius_expand = 3.0 # ball moves per second, the reference radius expand +- 3 pixel  
     circle_radius_max = None  
     circle_radius_min = None
     
-    ball_move_rate_img = 100.0 # = dt * ball_move_range_2d (ball center move rate in unit time on image) 
+    ball_move_rate_img = None # = dt * ball_move_range_2d (ball center move rate in unit time on image) 
+
+    ref_color = None
     
     
 class camera_info:
@@ -67,6 +69,9 @@ class camera_info:
 
             self.cam[idx_cam].circle_radius_max = np.zeros(self.num_ball) 
             self.cam[idx_cam].circle_radius_min = np.zeros(self.num_ball) 
+            self.cam[idx_cam].ref_color = np.zeros((3,self.num_ball))
+
+            self.cam[idx_cam].ball_move_rate_img = np.ones((1,self.num_ball))*100
 
 
     def ball_img_detect_locate(self,img_input_list):   
@@ -74,16 +79,16 @@ class camera_info:
         img_result_list = [None, None, None, None]
         
         for idx_cam in range(self.num_cam):
-            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect (img_input_list[idx_cam], 0 , self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max)
+            
+            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect_single_ball (img_input_list[idx_cam], 0 , self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max, self.cam[idx_cam].ref_color, self.num_ball, idx_cam)
 
             # all balls have been successfully detected 
             if np.sum(self.cam[idx_cam].img_ball_center)!=0:
                 # add index into effective photo list
                 self.list_eff_cam += [idx_cam]  
                 self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
-                
-                self.cam[idx_cam].circle_radius_max = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_max+(1-self.cam[idx_cam].circle_radius_threshold_decay)*np.max(self.cam[idx_cam].img_ball_radius)
-                self.cam[idx_cam].circle_radius_min = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_min+(1-self.cam[idx_cam].circle_radius_threshold_decay)*np.min(self.cam[idx_cam].img_ball_radius) 
+                # self.cam[idx_cam].circle_radius_max = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_max+(1-self.cam[idx_cam].circle_radius_threshold_decay)*(self.cam[idx_cam].img_ball_radius)
+                # self.cam[idx_cam].circle_radius_min = self.cam[idx_cam].circle_radius_threshold_decay*self.cam[idx_cam].circle_radius_min+(1-self.cam[idx_cam].circle_radius_threshold_decay)*(self.cam[idx_cam].img_ball_radius) 
 
         return img_result_list
          

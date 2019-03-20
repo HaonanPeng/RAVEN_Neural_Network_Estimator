@@ -21,8 +21,8 @@ class circle_class:
     g = np.array([0,0])
     r = np.array([0,0])
 
-def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_radius_max, ref_color, num_ball):
-    
+def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_radius_max, ref_color, num_ball, idx_cam):
+    img_origin = img
     # constant defination
     pi = math.pi
     color_detect3_threshhold = 20
@@ -31,58 +31,97 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     circle_radius_min = np.int_(circle_radius_min)
     circle_radius_max = np.int_(circle_radius_max)
 
+
+    
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
+    
+###############################################
+
     h, w = img.shape[:2]
     
     img = cv2.GaussianBlur(img, (0,0), 1)
 
-###############################################
-# Old channel method ----------------------------------------------------------------------------------
     red = np.float32(img[:,:,2])
     green = np.float32(img[:,:,1])
-    blue = np.float32(img[:,:,0]) 
-    
-    channel_ball_2 = np.uint8(((red-green)*2).clip(min=0,max=255)) # red
-    channel_ball_0 = np.uint8(((green-red)*2).clip(min=0,max=255)) # green
-    channel_ball_1 = np.uint8((((red-blue).clip(min=0,max=255)-channel_ball_2)*2).clip(min=0,max=255))  # yellow
-# New channel method ----------------------------------------------------------------------------------
+    blue = np.float32(img[:,:,0])   
 
-    # channel = np.zeros((h,w,num_ball))
+# Old channel method ----------------------------------------------------------------------------------
     
-    # for idx_ball in range(num_ball):
-    #     d_r = np.absolute(np.ones((h,w))*ref_color[idx_ball,2]-img[:,:,2])
-    #     d_g = np.absolute(np.ones((h,w))*ref_color[idx_ball,1]-img[:,:,1])
-    #     d_b = np.absolute(np.ones((h,w))*ref_color[idx_ball,0]-img[:,:,0])
-        
-    #     channel[:,:,idx_ball] = (np.ones((h,w))*255-(d_r+d_g+d_b)).clip(min=0)
+    if (idx_cam == 0)or(idx_cam==1):
+        channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
+        channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
+        channel_ball_1 = np.uint8((2*((red-blue)).clip(min=0,max=255)-channel_ball_2).clip(min=0,max=255))  # yellow
+    if (idx_cam == 2)or(idx_cam==3):
+        channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
+        channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
+        channel_ball_1 = np.uint8((2*((red-blue)).clip(min=0,max=255)-channel_ball_2).clip(min=0,max=255))  # yellow
     
-    # channel_new = np.zeros((h,w,num_ball))
-    # for idx_ball in range(num_ball):
-    #     list_remain = list(range(num_ball))
-    #     list_remain.remove(idx_ball)
-    #     print(list_remain)
-    #     channel_remain_sum = np.zeros((h,w))
-    #     for i in range(len(list_remain)):
-    #         idx_ball_2 = list_remain[i]
-    #         channel_remain_sum += channel[:,:,idx_ball_2]
-    #     channel_remain_avg = channel_remain_sum/len(list_remain)
-    #     channel_new[:,:,idx_ball] = np.uint8((channel[:,:,idx_ball]-channel_remain_avg).clip(min=0))
-    # channel_ball_0 = np.uint8(channel_new[:,:,0])
-    # channel_ball_1 = np.uint8(channel_new[:,:,1])
-    # channel_ball_2 = np.uint8(channel_new[:,:,2])
+    # channel_ball_2_temp = (7*(red-green)).clip(min=0,max=255) # red
+    # channel_ball_0_temp = (7*(green-red)).clip(min=0,max=255) # green
+    # channel_ball_1_temp = (7*((red-blue)).clip(min=0,max=255)-channel_ball_0_temp).clip(min=0,max=255)  # yellow
+
+    # channel_ball_0 = np.uint8((channel_ball_0_temp - channel_ball_1_temp - channel_ball_2_temp).clip(min=0,max=255))
+    # channel_ball_1 = np.uint8((channel_ball_1_temp - channel_ball_0_temp - channel_ball_2_temp).clip(min=0,max=255))
+    # channel_ball_2 = np.uint8((channel_ball_2_temp - channel_ball_0_temp - channel_ball_1_temp).clip(min=0,max=255))
+
+
+    if showplot == 1:
+        cv2.imshow("green",channel_ball_0)
+        cv2.imshow("yellow",channel_ball_1)
+        cv2.imshow("red",channel_ball_2)
+        #cv2.imshow("show",gray)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows() 
+# Old channel method ----------------------------------------------------------------------------------
     
-    # if showplot ==1:
-    #     cv2.imshow("ball0",channel_ball_0)
-    #     cv2.imshow("ball1",channel_ball_1)
-    #     cv2.imshow("ball2",channel_ball_2)
-    #     #cv2.imshow("show",gray)
-    #     cv2.waitKey(0)
-    #     cv2.destroyAllWindows() 
+##    ref_color = np.array([[210,230,135],[90,250,230],[250,80,190]]) # green, yellow, red 
+#    ref_color = np.array([[30,180,20],[60,120,170],[100,60,160]])
+#
+#    num_ball = 3
+#    channel = np.zeros((h,w,num_ball))
+#    
+#    for idx_ball in range(num_ball):
+#        d_r = np.absolute(np.ones((h,w))*ref_color[idx_ball,2]-img[:,:,2])
+#        d_g = np.absolute(np.ones((h,w))*ref_color[idx_ball,1]-img[:,:,1])
+#        d_b = np.absolute(np.ones((h,w))*ref_color[idx_ball,0]-img[:,:,0])
+#        
+##        d_r = np.square(d_r)
+##        d_g = np.square(d_g)
+##        d_b = np.square(d_b)
+#        channel[:,:,idx_ball] = (np.ones((h,w))*255-(d_r+d_g+d_b)).clip(min=0)
+#        
+#    
+#    #cv2.imshow("show",np.uint8(channel[:,:,1])) 
+#    #cv2.waitKey(0)
+#    #cv2.destroyAllWindows() 
+#    
+#    channel_new = np.zeros((h,w,num_ball))
+#    for idx_ball in range(num_ball):
+#        list_remain = list(range(num_ball))
+#        list_remain.remove(idx_ball)
+#        print(list_remain)
+#        channel_remain_sum = np.zeros((h,w))
+#        for i in range(len(list_remain)):
+#            idx_ball_2 = list_remain[i]
+#            channel_remain_sum += channel[:,:,idx_ball_2]
+#        channel_remain_avg = channel_remain_sum/len(list_remain)
+#        channel_new[:,:,idx_ball] = np.uint8((channel[:,:,idx_ball]-channel_remain_avg).clip(min=0))
+#    channel_ball_0 = np.uint8(channel_new[:,:,0])
+#    channel_ball_1 = np.uint8(channel_new[:,:,1])
+#    channel_ball_2 = np.uint8(channel_new[:,:,2])
+#    
+#    if showplot ==1:
+#        cv2.imshow("ball0",channel_ball_0)
+#        cv2.imshow("ball1",channel_ball_1)
+#        cv2.imshow("ball2",channel_ball_2)
+#        #cv2.imshow("show",gray)
+#        cv2.waitKey(0)
+#        cv2.destroyAllWindows() 
 
 ###############################################
 
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+#    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
     
     # denoise for color image
     img = cv2.GaussianBlur(img, (0,0), 4)
@@ -228,7 +267,7 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
             # draw center
             #cv2.circle(img, circle_temp[counter].center, 3, (0, 255, 0), -1, 8, 0)
             # 绘制圆轮廓
-            cv2.circle(img, circle_temp[counter].center, circle_temp[counter].radius, (255, 255, 255), 1, 1, 0)
+            cv2.circle(img_origin, circle_temp[counter].center, circle_temp[counter].radius, (255, 255, 255), 1, 1, 0)
                 
             #sample points to detect color
             for k in range(0, sample_number):
@@ -246,7 +285,7 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
                 draw_color = (float(draw_color[0]),float(draw_color[1]),float(draw_color[2]))
                 
                 circle_temp[counter].color_vec = circle_temp[counter].color_vec + detected_color
-                cv2.circle(img, (pointX, pointY), 1, draw_color, 1, 1, 0)
+                cv2.circle(img_origin, (pointX, pointY), 1, draw_color, 1, 1, 0)
                 
             counter = counter + 1
     
@@ -264,8 +303,8 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
 
         
     if showplot == 1:
-        cv2.imwrite("out_put_img_before_color_assign.jpg",img)   
-        cv2.imshow("img",img)
+        cv2.imwrite("out_put_img_before_color_assign.jpg",img_origin)   
+        cv2.imshow("img",img_origin)
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
@@ -299,18 +338,18 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
             return np.zeros((3, 2)), np.zeros(3), img
         counter2 = counter2 + 1      
 
-    cv2.circle(img, (int(circle_centers[0][0]),int(circle_centers[0][1])), 1, (255, 50, 50), 1, 1, 0)
-    cv2.circle(img, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
-    cv2.circle(img, (int(circle_centers[2][0]),int(circle_centers[2][1])), 1, (0, 0, 0), 1, 1, 0)
+    cv2.circle(img_origin, (int(circle_centers[0][0]),int(circle_centers[0][1])), 1, (255, 50, 50), 1, 1, 0)
+    cv2.circle(img_origin, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
+    cv2.circle(img_origin, (int(circle_centers[2][0]),int(circle_centers[2][1])), 1, (0, 0, 0), 1, 1, 0)
     
      
     if showplot == 1:        
-        cv2.imwrite("out_put_img.jpg",img)   
-        cv2.imshow("show",img)
+        cv2.imwrite("out_put_img.jpg",img_origin)   
+        cv2.imshow("show",img_origin)
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
-    return circle_centers, circle_radius, img
+    return circle_centers, circle_radius, img_origin
 
 def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, min_center_distance):
     
