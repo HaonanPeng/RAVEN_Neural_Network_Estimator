@@ -5,7 +5,7 @@ import func_circle_detect as f_cd
 
 camera_info = f_cip.camera_info()
 
-def load_images_from_folder(folder):
+def load_images_from_folder(folder): 
     images = []
     for filename in os.listdir(folder):
         img = cv2.imread(os.path.join(folder,filename))
@@ -15,7 +15,7 @@ def load_images_from_folder(folder):
     return images
 
 print('File names:\n')
-folder = r'D:\iCloudDrive\Research Credit\Codes\Test - Full - Jan 23\bagfiles'
+folder = r'C:\Users\Xingjian Yang\iCloudDrive\Research Credit\Test - Full - March 6\img_test_sample'
 images = load_images_from_folder(folder)
 
 
