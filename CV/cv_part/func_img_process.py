@@ -64,16 +64,11 @@ class img_processor:
     
     # index seed, will be used in the filter
     idx_seed = None
-    
-    time_difference = 1.18 # This is the difference between the two computers, if the 4 webcams are connected to one computer, this should be 0
-        
 
     # Load the time stamps and set initial values         
     def load_time_str(self):
-        
-        
-        cam0_time_str_vec = np.loadtxt(self.cam0_time_str_path) + self.time_difference
-        cam1_time_str_vec = np.loadtxt(self.cam1_time_str_path) + self.time_difference
+        cam0_time_str_vec = np.loadtxt(self.cam0_time_str_path)
+        cam1_time_str_vec = np.loadtxt(self.cam1_time_str_path)
         cam2_time_str_vec = np.loadtxt(self.cam2_time_str_path)
         cam3_time_str_vec = np.loadtxt(self.cam3_time_str_path)
         raven_time_str_vec = np.loadtxt(self.raven_data_path)
@@ -136,9 +131,9 @@ class img_processor:
     # Function to load images relative to current time stamp
     def load_img(self):
         # Load cam0
-        self.img_cur[0] = cv2.imread(self.cam0_folder_path + str("%.6f" % (self.time_str_cur[0] - self.time_difference)) + ".jpg")
+        self.img_cur[0] = cv2.imread(self.cam0_folder_path + str("%.6f" % self.time_str_cur[0]) + ".jpg")
         # Load cam1
-        self.img_cur[1] = cv2.imread(self.cam1_folder_path + str("%.6f" % (self.time_str_cur[1] - self.time_difference)) + ".jpg")
+        self.img_cur[1] = cv2.imread(self.cam1_folder_path + str("%.6f" % self.time_str_cur[1]) + ".jpg")
         # Load cam2
         self.img_cur[2] = cv2.imread(self.cam2_folder_path + str("%.6f" % self.time_str_cur[2]) + ".jpg")
         # Load cam3
@@ -146,29 +141,33 @@ class img_processor:
         
     def locate_ball(self,index_iteration):
 
-        def update_ref_radius(list_cam_update):
+        def update_radius_distance(list_cam_update):
             for i in range(len(list_cam_update)):
                 idx_cam = int(list_cam_update[i])
-                dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam] # delta time step
+                dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam] # delta time step 
+                #dt = dt.item()
                 # updat reference circle radius
-                for idx_ball in range(self.camera_info.num_ball): 
-                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] += 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] -= 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand 
+#                self.camera_info.cam[idx_cam].circle_radius_max += dt*self.camera_info.cam[idx_cam].circle_radius_expand
+#                self.camera_info.cam[idx_cam].circle_radius_min -= dt*self.camera_info.cam[idx_cam].circle_radius_expand 
+                # update reasonable ball distance, set the minimum as half of min_radius
+                self.camera_info.cam[idx_cam].min_center_distance -= self.camera_info.cam[idx_cam].min_center_distance_shrink*dt
+                if self.camera_info.cam[idx_cam].min_center_distance<(self.camera_info.cam[idx_cam].circle_radius_min/2):
+                    self.camera_info.cam[idx_cam].min_center_distance = self.camera_info.cam[idx_cam].circle_radius_min/2
                 
-        def unupdate_ref_radius(list_cam_unupdate):
+        def unupdate_radius_distance(list_cam_unupdate):
             for i in range(len(list_cam_unupdate)):
                 idx_cam = int(list_cam_unupdate[i])
                 dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam] # delta time step 
-                # updat reference circle radius
-                for idx_ball in range(self.camera_info.num_ball): 
-                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] -= 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] += 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand  
+                # unupdat reference circle radius
+#                self.camera_info.cam[idx_cam].circle_radius_max -= dt*self.camera_info.cam[idx_cam].circle_radius_expand
+#                self.camera_info.cam[idx_cam].circle_radius_min += dt*self.camera_info.cam[idx_cam].circle_radius_expand          
+                # unupdate reasonable ball distance, set the minimum as half of min_radius
+                if self.camera_info.cam[idx_cam].min_center_distance!=(self.camera_info.cam[idx_cam].circle_radius_min/2):
+                    self.camera_info.cam[idx_cam].min_center_distance += self.camera_info.cam[idx_cam].min_center_distance_shrink*dt
 
 
-
-        # update the reference_radius_max/min with time range between current and last effective one 
-        if index_iteration != 0:
-            update_ref_radius(list(range(0,self.camera_info.num_cam)))
+        # update the reference_radius_max/min and center_distance with time range between current and last effective one 
+        update_radius_distance(list(range(0,self.camera_info.num_cam)))
 
         # save the list of effective frame from last time    
         if index_iteration != 0:
@@ -188,14 +187,13 @@ class img_processor:
                 for idx_ball in range(self.camera_info.num_ball):
 
                     # calculate the ball center move distance between two frames  
-                    # ball_center_current = self.camera_info.cam[idx_cam].img_ball_center[idx_ball]
-                    # ball_center_lastframe = self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball]
-                    # move_distance_2d = np.linalg.norm(ball_center_current - ball_center_lastframe)
-                    move_distance_2d = np.linalg.norm(self.camera_info.cam[idx_cam].img_ball_center[idx_ball] - self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball])
+                    ball_center_current = self.camera_info.cam[idx_cam].img_ball_center[idx_ball]
+                    ball_center_lastframe = self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball]
+                    move_distance_2d = np.linalg.norm(ball_center_current - ball_center_lastframe)
                     
                     # find if image move  
                     dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam]
-                    if move_distance_2d>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]):
+                    if move_distance_2d>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img):
                         uneff_sign = 1
                         print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n',dt*self.camera_info.cam[idx_cam].ball_move_rate_img)                             
                 
@@ -238,7 +236,6 @@ class img_processor:
                     pass_sign = 0
 
             if pass_sign == 1:
-                print('cam[',idx_cam_new,']back to work-----------------------------------')
                 list_cam_trust.append(idx_cam_new)
         
         self.camera_info.list_eff_cam_last = list_cam_trust
@@ -254,11 +251,11 @@ class img_processor:
             # save the img_ball_center from last frame
             self.camera_info.cam[idx_cam].img_ball_center_lastframe = self.camera_info.cam[idx_cam].img_ball_center
             # update the ball_move_rate_img with the half of max image radius
-            self.camera_info.cam[idx_cam].ball_move_rate_img = self.camera_info.cam[idx_cam].img_ball_radius
+            self.camera_info.cam[idx_cam].ball_move_rate_img = np.min(self.camera_info.cam[idx_cam].img_ball_radius)
         
         list_uneff_cam = [x for x in list(range(0,self.camera_info.num_cam)) if x not in self.camera_info.list_eff_cam]
         # roll back reference radius of uneffective frames
-        unupdate_ref_radius(list_uneff_cam)
+        unupdate_radius_distance(list_uneff_cam)
         
 
     def save_img(self):
@@ -310,15 +307,19 @@ class img_processor:
         print ("---------------------------------------------------")
         print ("[IMG_PROCESSOR]:Cam0 MAX radius: " + str(self.camera_info.cam[0].circle_radius_max))
         print ("[IMG_PROCESSOR]:Cam0 MIN radius: " + str(self.camera_info.cam[0].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam0 distance: " + str(self.camera_info.cam[0].min_center_distance))
         print ("---------------------------------------------------")
         print ("[IMG_PROCESSOR]:Cam1 MAX radius: " + str(self.camera_info.cam[1].circle_radius_max))
         print ("[IMG_PROCESSOR]:Cam1 MIN radius: " + str(self.camera_info.cam[1].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam1 distance: " + str(self.camera_info.cam[1].min_center_distance))
         print ("---------------------------------------------------")
         print ("[IMG_PROCESSOR]:Cam2 MAX radius: " + str(self.camera_info.cam[2].circle_radius_max))
         print ("[IMG_PROCESSOR]:Cam2 MIN radius: " + str(self.camera_info.cam[2].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam2 distance: " + str(self.camera_info.cam[2].min_center_distance))
         print ("---------------------------------------------------")
         print ("[IMG_PROCESSOR]:Cam3 MAX radius: " + str(self.camera_info.cam[3].circle_radius_max))
         print ("[IMG_PROCESSOR]:Cam3 MIN radius: " + str(self.camera_info.cam[3].circle_radius_min))
+        print ("[IMG_PROCESSOR]:Cam3 distance: " + str(self.camera_info.cam[3].min_center_distance))
         
     def update_result(self):
         self.result_matrix[0] = self.frame_counter
