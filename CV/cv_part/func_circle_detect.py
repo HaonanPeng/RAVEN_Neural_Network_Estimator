@@ -21,8 +21,9 @@ class circle_class:
     g = np.array([0,0])
     r = np.array([0,0])
 
-def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
-    
+def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max, min_center_distance):
+    img = cv2.GaussianBlur(img, (0,0), 1)
+
     # constant defination
     pi = math.pi
     color_detect3_threshhold = 20
@@ -35,18 +36,61 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
     
-    gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    h, w = img.shape[:2]
+
+    red = np.asarray(img[:,:,2])
+    green = np.asarray(img[:,:,1])
+    blue = np.asarray(img[:,:,0])
+    ones = np.ones((h,w))
+    new = (ones-np.multiply((ones-red/255),(ones-green/255)))*255
+    gray = np.uint8(new) 
+
+    #gray = cv2.cvtColor(img,cv2.COLOR_BGR2GRAY)
+    
     #Gaussian filter
     
     #cv2.imshow("show",gray)
     #cv2.waitKey(0)
     
     # denoise
-    img = cv2.fastNlMeansDenoisingColored(img,None,10,10,7,21)
+
+    red_new = (np.square(red/50)*200).clip(min=0,max=255)
+    green_new = (np.square(red/50)*200).clip(min=0,max=255)
+    blue_new = (np.square(red/50)*200).clip(min=0,max=255) 
+
+    #red_new = ((red_new-np.ones((h,w))*250).clip(min=0,max=255)*255).clip(min=0,max=255)
+    #green_new = ((green_new-np.ones((h,w))*250).clip(min=0,max=255)*255).clip(min=0,max=255)
+    #blue_new = ((blue_new-np.ones((h,w))*250).clip(min=0,max=255)*255).clip(min=0,max=255)
+
+    new_img = np.zeros((h,w,3))
+    new_img[:,:,0] = blue_new
+    new_img[:,:,1] = green_new
+    new_img[:,:,2] = red_new
+    gray = cv2.cvtColor(np.uint8(new_img),cv2.COLOR_BGR2GRAY)
+
+    gray_temp = np.zeros((h,w))
+    canny_interation = 10
+    gauss_interation = 4
+    canny_inc = 30
+    canny_const = 80
+    for i in range(0,canny_interation):
+        # temp = cv2.Canny(gray,canny_inc*i,canny_inc*i)
+        # cv2.imshow("CANNY" + str(i),temp)
+        # cv2.waitKey(0)
+        # cv2.destroyAllWindows() 
+        for j in range(0,gauss_interation):
+            gray_gauss = cv2.GaussianBlur(img, (0,0), 1+gauss_interation)
+            gray_temp = gray_temp+np.float32(cv2.Canny(gray_gauss,canny_inc*i+canny_const,canny_inc*i+canny_const))
+    
+    gray = np.uint8((gray_temp/canny_interation/gauss_interation*20).clip(min=0,max=255))
+
+    cv2.imshow("show",gray)
+    cv2.waitKey(0)
+
     end_signal_hough = 0
     while end_signal_hough == 0:
-        gray = cv2.GaussianBlur(gray,(0, 0),gaussian_blur_para)
-        hough_para2 = 2;
+        
+        hough_para2 = 10
         circles = np.zeros((2,2))
         hough_para2_inc = 5
         end_signal_3 = 0
@@ -54,15 +98,16 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
         #circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,2.0,30)
         if gaussian_blur_para >=5:
             print("[ERROR]:Hough circle detect failed")
-            return -1
+            return np.zeros((3,2)), np.zeros(3), img
     
         while end_signal_3 == 0:
-            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,60,
+            circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1.0,min_center_distance,
                                    param1=100, param2=hough_para2, minRadius=circle_radius_min, maxRadius=circle_radius_max)
-            if hough_para2_inc < 0.0000001:
+            if hough_para2_inc < 0.0001:
                 end_signal_3 = 1
                 gaussian_blur_para = gaussian_blur_para + 1
-#                print("[IMG]:Gaussian blur parameter increased")
+                gray = cv2.GaussianBlur(gray,(0, 0),1)
+                print("[IMG]:Gaussian blur parameter increased")
             try:
                 if len(circles[0]) > 3:
                     hough_para2 = hough_para2 + hough_para2_inc
@@ -72,24 +117,24 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
                     hough_para2 = hough_para2 - hough_para2_inc
                     if old_num_circles >=3:
                         hough_para2_inc = hough_para2_inc/2
-                if (len(circles[0]) == 3) & (old_num_circles > 3) & (hough_para2_inc < 0.01):
+                if (len(circles[0]) == 3) & (old_num_circles > 3) & (hough_para2_inc < 0.1):
                     end_signal_3 = 1
                     end_signal_hough =1
                 old_num_circles = len(circles[0])
             except:
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
-                old_num_circles = 0
-            
-#            print("current hough_para2 = " )
-#            print(hough_para2)
-#            print("current hough_para2_inc = ")
-#            print(hough_para2_inc)
-        
+                old_num_circles = 0 
+            if hough_para2 <= 0:
+                hough_para2 = hough_para2 + hough_para2_inc +0.001
+                hough_para2_inc = hough_para2_inc/2
+            print("Hough Circle para2 = " + str(hough_para2))
+# [test]
+    circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1.0,min_center_distance,
+                                    param1=100, param2=(1.2*hough_para2), minRadius=circle_radius_min, maxRadius=circle_radius_max)
+#[test]
 
-        
-             
-        
+
     for i in circles:
         counter=0
         for j in i: #extract center and radius of the three circles
@@ -173,7 +218,7 @@ def circle_center_detect (img, showplot, circle_radius_min, circle_radius_max):
     cv2.circle(img, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
     cv2.circle(img, (int(circle_centers[2][0]),int(circle_centers[2][1])), 1, (0, 0, 0), 1, 1, 0)
     
-    cv2.imwrite("out_put_img.jpg",img)    
+    #cv2.imwrite("out_put_img.jpg",img)    
     if showplot == 1:        
         cv2.imshow("show",img)
         #cv2.imshow("show",gray)
@@ -190,13 +235,15 @@ def color_detect4 (target_color, threshhold):
     b = int(target_color[0])
     g = int(target_color[1])
     r = int(target_color[2])
-
     
-    if (abs(r-b)<20) & ((g-r)>30) & ((g-b)>40):
+    # green 
+    if ((b-r)>(-10)) & ((g-r)>30) & ((g-b)>15):
         color[0] = 1
-    if (abs(r-g)<60) & ((r-b)>60) & ((g-b)>50):
+    # yellow    
+    if (abs(r-g)<40) & ((r-b)>20) & ((g-b)>30):
         color[1] = 1
-    if ((r-g)>80) & ((r-b)>30) & ((b-g)>25):
+    # red     
+    if ((r-g)>70) & ((r-b)>15) & ((b-g)>25):
         color[2] = 1
     
     return color
