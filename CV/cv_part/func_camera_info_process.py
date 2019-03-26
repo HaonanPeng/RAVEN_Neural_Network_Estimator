@@ -95,7 +95,7 @@ class camera_info:
 #            [test]
 
             # all balls have been successfully detected 
-            if np.sum(self.cam[idx_cam].img_ball_center)!=0:
+            if (np.sum(self.cam[idx_cam].img_ball_center)!=0)and(np.sum(self.cam[idx_cam].img_ball_radius)!=0):
                 # add index into effective photo list
                 self.list_eff_cam += [idx_cam]  
                 self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
