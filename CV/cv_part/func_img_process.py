@@ -322,9 +322,16 @@ class img_processor:
         print ("[IMG_PROCESSOR]:Cam3 MIN radius: " + str(self.camera_info.cam[3].circle_radius_min))
         
     def update_result(self):
-        self.result_matrix[0] = self.frame_counter
-        self.result_matrix[1] = np.sum(self.time_str_cur) / 4
-        self.result_matrix[2:11] = self.ball_center.flatten()
+        self.result_matrix[0,0] = self.frame_counter
+        # print(self.time_str_cur)
+        
+        self.result_matrix[0,1] = np.sum(self.time_str_cur)/5
+        self.result_matrix[0,2:11] = self.ball_center.flatten()
+        # print(self.result_matrix)
+        file=open('img_process_result.txt','ab')
+        np.savetxt(file, self.result_matrix, fmt='%.4f',delimiter='\t')
+        file.close()
+
         
 
 # Commenly tool functions

@@ -29,12 +29,14 @@ img_processor0.load_time_str()
 
 t = time.time()
 
-for iteration in range(0,40):
+for iteration in range(0,3):
     img_processor0.find_next_idx()
     img_processor0.load_img()
     img_processor0.locate_ball(iteration)
     img_processor0.save_img()
     img_processor0.show_cam_info()
+    img_processor0.update_result()
+
 
 elapsed = time.time() - t
 print('\n\n time =',elapsed)    
