@@ -152,8 +152,8 @@ class img_processor:
                 dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam] # delta time step
                 # updat reference circle radius
                 for idx_ball in range(self.camera_info.num_ball): 
-                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] += 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] -= 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand 
+                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] += dt*self.camera_info.cam[idx_cam].circle_radius_expand
+                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] -= dt*self.camera_info.cam[idx_cam].circle_radius_expand 
                 
         def unupdate_ref_radius(list_cam_unupdate):
             for i in range(len(list_cam_unupdate)):
@@ -161,8 +161,8 @@ class img_processor:
                 dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_cam] # delta time step 
                 # updat reference circle radius
                 for idx_ball in range(self.camera_info.num_ball): 
-                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] -= 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] += 0 #dt*self.camera_info.cam[idx_cam].circle_radius_expand  
+                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] -= dt*self.camera_info.cam[idx_cam].circle_radius_expand
+                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] += dt*self.camera_info.cam[idx_cam].circle_radius_expand  
 
 
 
@@ -191,6 +191,7 @@ class img_processor:
                     # ball_center_current = self.camera_info.cam[idx_cam].img_ball_center[idx_ball]
                     # ball_center_lastframe = self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball]
                     # move_distance_2d = np.linalg.norm(ball_center_current - ball_center_lastframe)
+                    
                     move_distance_2d = np.linalg.norm(self.camera_info.cam[idx_cam].img_ball_center[idx_ball] - self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball])
                     
                     # find if image move  

@@ -35,7 +35,7 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
 
     h, w = img.shape[:2]
     
-    img = cv2.GaussianBlur(img, (0,0), 1)
+#    img = cv2.GaussianBlur(img, (0,0), 1)
 
     red = np.float32(img[:,:,2])
     green = np.float32(img[:,:,1])
@@ -57,17 +57,21 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     for i in range(6):
         gray_gauss_sum += np.float32(cv2.GaussianBlur(gray, (0,0), i+1))
     gray_gauss_sum = np.uint8(gray_gauss_sum/(i+1))
-    cv2.imshow("gray_gauss_sum",gray_gauss_sum)
-    cv2.waitKey(0)
-    cv2.destroyAllWindows() 
+    
+    if showplot == 1:
+        cv2.imshow("gray_gauss_sum",gray_gauss_sum)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows() 
 
     canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 2),50,50)
     combine = np.zeros((h,w,3))
     for i in range(3):
         combine[:,:,i] += (np.float32(canny_edge)+np.float32(img[:,:,i])).clip(min=0,max=255)
-    cv2.imshow("canny on origin",np.uint8(combine))
-    cv2.waitKey(0)
-    cv2.destroyAllWindows() 
+        
+    if showplot == 1:
+        cv2.imshow("canny on origin",np.uint8(combine))
+        cv2.waitKey(0)
+        cv2.destroyAllWindows() 
 
     if (idx_cam == 0) or (idx_cam == 1):
         channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
@@ -93,6 +97,12 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
     channel_ball_0 = cv2.GaussianBlur(channel_ball_0, (0,0), 1)
     channel_ball_1 = cv2.GaussianBlur(channel_ball_1, (0,0), 1)
     channel_ball_2 = cv2.GaussianBlur(channel_ball_2, (0,0), 1)
+    
+    channel_ball_0 = np.uint8(((np.float32(channel_ball_0)-75*np.ones((h,w)))*255).clip(min=0,max=255))
+    channel_ball_1 = np.uint8(((np.float32(channel_ball_1)-75*np.ones((h,w)))*255).clip(min=0,max=255))
+    channel_ball_2 = np.uint8(((np.float32(channel_ball_2)-75*np.ones((h,w)))*255).clip(min=0,max=255))
+    
+
 
 
 ###############################################################    
@@ -100,6 +110,10 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
         cv2.imshow("green",channel_ball_0)
         cv2.imshow("yellow",channel_ball_1)
         cv2.imshow("red",channel_ball_2)
+        
+        cv2.imwrite("0green_blured_canny.jpg",channel_ball_0)
+        cv2.imwrite("0yellow_blured_canny.jpg",channel_ball_1)
+        cv2.imwrite("0red_blured_canny.jpg",channel_ball_2)
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
@@ -149,6 +163,9 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
                 old_num_circles = 0
+            if hough_para2 <= 0:
+                hough_para2 = hough_para2 + hough_para2_inc +0.001
+                hough_para2_inc = hough_para2_inc/2
             if showplot == 1:
                 print("Ball0: Current Hough para2 = " + str(hough_para2))
     circles_info[0][0] = circles[0][0] 
@@ -192,7 +209,10 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
             except:
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
-                old_num_circles = 0     
+                old_num_circles = 0
+            if hough_para2 <= 0:
+                hough_para2 = hough_para2 + hough_para2_inc +0.001
+                hough_para2_inc = hough_para2_inc/2
             if showplot == 1:
                 print("Ball1: Current Hougg para2 = " + str(hough_para2))
     circles_info[0][1] = circles[0][0] 
@@ -236,6 +256,9 @@ def circle_center_detect_single_ball (img, showplot, circle_radius_min, circle_r
                 hough_para2 = hough_para2 - hough_para2_inc
                 hough_para2_inc = hough_para2_inc/2
                 old_num_circles = 0
+            if hough_para2 <= 0:
+                hough_para2 = hough_para2 + hough_para2_inc +0.001
+                hough_para2_inc = hough_para2_inc/2
             if showplot == 1:
                 print("Ball2: Current Hough para2 = " + str(hough_para2))
     circles_info[0][2] = circles[0][0] 
