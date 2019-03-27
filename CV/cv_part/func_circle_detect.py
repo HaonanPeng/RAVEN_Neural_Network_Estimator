@@ -23,15 +23,14 @@ class circle_class:
 
 def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles_radius_max, ref_color, num_ball, idx_cam):
     img_origin = img
-    # constant defination
     pi = math.pi
     color_detect3_threshhold = 20
     sample_number = 30
+    sign_carve = 1
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
 
     h, w = img.shape[:2]
-
     red = np.float32(img[:,:,2])
     green = np.float32(img[:,:,1])
     blue = np.float32(img[:,:,0])   
@@ -119,11 +118,41 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     circle_1 = auto_hough_circle(channel_ball_1 , circle_numbers, showplot , np.int_(circles_radius_min[1]), np.int_(circles_radius_max[1]), hough_para, hough_para_inc, hough_para_threshold)
     circle_2 = auto_hough_circle(channel_ball_2 , circle_numbers, showplot , np.int_(circles_radius_min[2]), np.int_(circles_radius_max[2]), hough_para, hough_para_inc, hough_para_threshold)
 
+    ############### carve out image circle #############################
+    if sign_carve == 1:
+        mask_0 = cv2.circle(np.zeros((h,w)),(circle_0[0][0][0],circle_0[0][0][1]), int(circle_0[0][0][2]+5), 255, -1)
+        mask_0 = cv2.circle(mask_0,(circle_0[0][0][0],circle_0[0][0][1]), int(circle_0[0][0][2]-3), 0, -1)
+
+        mask_1 = cv2.circle(np.zeros((h,w)),(circle_1[0][0][0],circle_1[0][0][1]), int(circle_1[0][0][2]+5), 255, -1)
+        mask_1 = cv2.circle(mask_1,(circle_1[0][0][0],circle_1[0][0][1]), int(circle_1[0][0][2]-3), 0, -1)
+
+        mask_2 = cv2.circle(np.zeros((h,w)),(circle_2[0][0][0],circle_2[0][0][1]), int(circle_2[0][0][2]+5), 255, -1)
+        mask_2 = cv2.circle(mask_2,(circle_2[0][0][0],circle_2[0][0][1]), int(circle_2[0][0][2]-3), 0, -1)
+
+        channel_ball_0 = np.uint8(np.multiply(mask_0/255,channel_ball_0))
+        channel_ball_1 = np.uint8(np.multiply(mask_1/255,channel_ball_1))
+        channel_ball_2 = np.uint8(np.multiply(mask_2/255,channel_ball_2))
+
+        circle_0 = auto_hough_circle(channel_ball_0 , circle_numbers, showplot , np.int_(circles_radius_min[0]), np.int_(circles_radius_max[0]), hough_para, hough_para_inc, hough_para_threshold)
+        circle_1 = auto_hough_circle(channel_ball_1 , circle_numbers, showplot , np.int_(circles_radius_min[1]), np.int_(circles_radius_max[1]), hough_para, hough_para_inc, hough_para_threshold)
+        circle_2 = auto_hough_circle(channel_ball_2 , circle_numbers, showplot , np.int_(circles_radius_min[2]), np.int_(circles_radius_max[2]), hough_para, hough_para_inc, hough_para_threshold)
+        
+        if showplot == 1:
+            # cv2.imshow("mask_0",mask_0)
+            # cv2.imshow("mask_1",mask_1)
+            # cv2.imshow("mask_2",mask_2)
+            cv2.imshow("green_carve",channel_ball_0)
+            cv2.imshow("yellow_carve",channel_ball_1)
+            cv2.imshow("red_carve",channel_ball_2)
+            cv2.waitKey(0)
+            cv2.destroyAllWindows() 
+    
+    ####################################################################
+
     circles_info[0][0] = circle_0[0][0] 
     circles_info[0][1] = circle_1[0][0] 
     circles_info[0][2] = circle_2[0][0] 
 
-######################################################
 
     for i in circles_info:
         counter=0
