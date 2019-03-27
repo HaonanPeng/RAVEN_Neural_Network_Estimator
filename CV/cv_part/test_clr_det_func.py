@@ -1,9 +1,4 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Thu Nov  1 20:40:57 2018
 
-@author: 75678
-"""
 import numpy as np
 import cv2
 import math
@@ -13,37 +8,113 @@ import time
 import sys
 
 
-#img_name = "1547272570.814634.jpg"
-#img_name = "2_1.jpg"
-img_name = "1551939956.541215.jpg"
+img_name = "test_4.jpg"
 img = cv2.imread(img_name)
 
-tic = time.time()
-for i in range(0,1):
-    circle_centers, circle_radius, out_put_img = cdf.circle_center_detect_single_ball(img, 1,[52,55,57],[54,57,59],np.array((3,3)),3)
-toc = time.time() - tic
-print("Time used: " + str(toc))
-#print("circle_center:" + str(circle_centers[0]) + " , " + str(circle_centers[1]))
-
-#cv2.imwrite("out_put" + img_name, out_put_img)
-
-print(circle_centers)
-print(circle_radius)
-
-#img_name = "1547272570.814634.jpg"
-#img = cv2.imread(img_name)
-#
-#circle_centers, circle_radius, out_put_img = cdf.circle_center_detect (img, 0, 0 , 0)
-#
-#cv2.imwrite("out_put" + img_name, out_put_img)
-
-#cv2.imshow("show",out_put_img)
-#cv2.imshow("show",gray)
-#cv2.waitKey(0)
-#cv2.destroyAllWindows() 
-
-#print(circle_centers)
+gray = cv2.cvtColor(np.uint8(img),cv2.COLOR_BGR2GRAY)
 
 
- # constant defination
+gaussian_blur_para = 1
+end_signal_hough = 0
+while end_signal_hough == 0:
+    hough_para2 = 10
+    hough_para2_inc = 5
+    end_signal_3 = 0
+    old_num_circles = 1000
+    
 
+    while end_signal_3 == 0:
+        circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,10,
+                                param1=100, param2=hough_para2, minRadius=54, maxRadius=60)
+        if hough_para2_inc < 0.0001:
+            channel_ball_2 = cv2.GaussianBlur(gray,(0, 0),1)
+            gaussian_blur_para = gaussian_blur_para + 1
+            end_signal_3 = 1
+        try:
+            if len(circles[0]) > 1:
+                hough_para2 = hough_para2 + hough_para2_inc
+                if old_num_circles <=1:
+                    hough_para2_inc = hough_para2_inc/2    
+            if len(circles[0]) <= 1:
+                hough_para2 = hough_para2 - hough_para2_inc
+                if old_num_circles >=1:
+                    hough_para2_inc = hough_para2_inc/2
+            if (len(circles[0]) == 1) & (old_num_circles > 1) & (hough_para2_inc < 0.01):
+                end_signal_3 = 1
+                end_signal_hough =1
+            old_num_circles = len(circles[0])
+        except:
+            hough_para2 = hough_para2 - hough_para2_inc
+            hough_para2_inc = hough_para2_inc/2
+            old_num_circles = 0
+        if hough_para2 <= 0:
+            hough_para2 = hough_para2 + hough_para2_inc +0.001
+            hough_para2_inc = hough_para2_inc/2
+
+
+
+x = circles[0][0][0]
+y = circles[0][0][1]
+r = circles[0][0][2]
+print(x,y,r)
+cv2.circle(img, (x,y), r, (0, 255, 0), 1, 1, 0)
+#cv2.circle(img,(x,y), int(r-4), (0,0,0), -1)
+cv2.imshow('img',img)
+cv2.waitKey(0)
+cv2.destroyAllWindows()
+
+
+# #######################################################################
+# gray = cv2.cvtColor(np.uint8(img),cv2.COLOR_BGR2GRAY)
+
+
+# gaussian_blur_para = 1
+# end_signal_hough = 0
+# while end_signal_hough == 0:
+#     hough_para2 = 10
+#     hough_para2_inc = 5
+#     end_signal_3 = 0
+#     old_num_circles = 1000
+    
+
+#     while end_signal_3 == 0:
+#         circles = cv2.HoughCircles(gray,cv2.HOUGH_GRADIENT,1,10,
+#                                 param1=100, param2=hough_para2, minRadius=54, maxRadius=60)
+#         if hough_para2_inc < 0.0001:
+#             channel_ball_2 = cv2.GaussianBlur(gray,(0, 0),1)
+#             gaussian_blur_para = gaussian_blur_para + 1
+#             end_signal_3 = 1
+#         try:
+#             if len(circles[0]) > 1:
+#                 hough_para2 = hough_para2 + hough_para2_inc
+#                 if old_num_circles <=1:
+#                     hough_para2_inc = hough_para2_inc/2    
+#             if len(circles[0]) <= 1:
+#                 hough_para2 = hough_para2 - hough_para2_inc
+#                 if old_num_circles >=1:
+#                     hough_para2_inc = hough_para2_inc/2
+#             if (len(circles[0]) == 1) & (old_num_circles > 1) & (hough_para2_inc < 0.01):
+#                 end_signal_3 = 1
+#                 end_signal_hough =1
+#             old_num_circles = len(circles[0])
+#         except:
+#             hough_para2 = hough_para2 - hough_para2_inc
+#             hough_para2_inc = hough_para2_inc/2
+#             old_num_circles = 0
+#         if hough_para2 <= 0:
+#             hough_para2 = hough_para2 + hough_para2_inc +0.001
+#             hough_para2_inc = hough_para2_inc/2
+
+
+
+# x = circles[0][0][0]
+# y = circles[0][0][1]
+# r = circles[0][0][2]
+# print(x,y,r)
+# cv2.circle(img, (x,y), r, (0, 255, 0), 1, 1, 0)
+# cv2.imshow('img',img)
+# cv2.waitKey(0)
+# cv2.destroyAllWindows()
+
+
+ 

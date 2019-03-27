@@ -15,7 +15,7 @@ info_R_cam = np.loadtxt(info_txt_path + 'info_R_cam.txt')
 
 circle_center_decay = 0.5
 
-showplot = 0
+showplot = 1
 
 
 class camera_info_definition():
