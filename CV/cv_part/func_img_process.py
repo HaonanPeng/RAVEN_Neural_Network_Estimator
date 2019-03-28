@@ -8,6 +8,8 @@ import sys
 # Main part of image processing
 class img_processor:
     
+    write_log = 1 # if 1, the console output will be write in to log file
+    
     # Data files path
     bagfile_folder_path = "bagfiles/"
     cam0_folder_path = bagfile_folder_path + "img_camera0/"
@@ -103,6 +105,12 @@ class img_processor:
         
         self.first_call = 0
         end_signal = 0
+        
+        if self.write_log == 1:
+            log_file_name = self.bagfile_folder_path + "log_img_processor.log"
+            print("[IMG_PROCESSOR]: Output is written into the log file: " + log_file_name)
+            f_handler=open(log_file_name, 'w')
+            sys.stdout=f_handler
         
         return end_signal
 
@@ -328,9 +336,15 @@ class img_processor:
         self.result_matrix[0,1] = np.sum(self.time_str_cur)/5
         self.result_matrix[0,2:11] = self.ball_center.flatten()
         # print(self.result_matrix)
-        file=open('img_process_result.txt','ab')
-        np.savetxt(file, self.result_matrix, fmt='%.4f',delimiter='\t')
-        file.close()
+        if self.first_call_result_txt == 0:
+            file=open('img_process_result.txt','w')
+            np.savetxt(file, self.result_matrix, fmt='%.4f',delimiter='\t')
+            file.close()
+            self.first_call_result_txt = 1
+        else:
+            file=open('img_process_result.txt','ab')
+            np.savetxt(file, self.result_matrix, fmt='%.4f',delimiter='\t')
+            file.close()
 
         
 
