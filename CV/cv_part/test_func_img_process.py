@@ -37,7 +37,7 @@ img_processor0.load_time_str()
 
 t = time.time()
 
-for iteration in range(0,1000):
+for iteration in range(0,10000):
     img_processor0.find_next_idx()
     img_processor0.load_img()
     img_processor0.locate_ball(iteration)

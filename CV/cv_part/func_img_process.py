@@ -63,6 +63,7 @@ class img_processor:
     
     # signal indicating the first call
     first_call = 0
+    first_call_result_txt = 0
     
     # index seed, will be used in the filter
     idx_seed = None
@@ -263,7 +264,7 @@ class img_processor:
             # save the img_ball_center from last frame
             self.camera_info.cam[idx_cam].img_ball_center_lastframe = self.camera_info.cam[idx_cam].img_ball_center
             # update the ball_move_rate_img with the half of max image radius
-            self.camera_info.cam[idx_cam].ball_move_rate_img = self.camera_info.cam[idx_cam].img_ball_radius
+            self.camera_info.cam[idx_cam].ball_move_rate_img = self.camera_info.cam[idx_cam].img_ball_radius*3
         
         list_uneff_cam = [x for x in list(range(0,self.camera_info.num_cam)) if x not in self.camera_info.list_eff_cam]
         # roll back reference radius of uneffective frames
@@ -314,8 +315,7 @@ class img_processor:
         print ("---------------------------------------------------")
         
     def show_cam_info(self):
-        print ("___________________________________________________________")
-        print ("[IMG_PROCESSOR]:Frame counter: " + str(self.frame_counter))
+        
         print ("---------------------------------------------------")
         print ("[IMG_PROCESSOR]:Cam0 MAX radius: " + str(self.camera_info.cam[0].circle_radius_max))
         print ("[IMG_PROCESSOR]:Cam0 MIN radius: " + str(self.camera_info.cam[0].circle_radius_min))
@@ -328,6 +328,9 @@ class img_processor:
         print ("---------------------------------------------------")
         print ("[IMG_PROCESSOR]:Cam3 MAX radius: " + str(self.camera_info.cam[3].circle_radius_max))
         print ("[IMG_PROCESSOR]:Cam3 MIN radius: " + str(self.camera_info.cam[3].circle_radius_min))
+        
+        print ("[IMG_PROCESSOR]:Current effectivelist : "+ str(self.camera_info.list_eff_cam))
+        print ("___________________________________________________________")
         
     def update_result(self):
         self.result_matrix[0,0] = self.frame_counter
@@ -345,6 +348,8 @@ class img_processor:
             file=open('img_process_result.txt','ab')
             np.savetxt(file, self.result_matrix, fmt='%.4f',delimiter='\t')
             file.close()
+            
+        
 
         
 

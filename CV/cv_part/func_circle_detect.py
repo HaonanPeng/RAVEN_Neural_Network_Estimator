@@ -26,7 +26,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     pi = math.pi
     color_detect3_threshhold = 20
     sample_number = 30
-    sign_carve = 1
+    sign_carve = 0
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
 
@@ -86,13 +86,17 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     channel_ball_1 = np.uint8(np.multiply(np.float32(channel_ball_1)/255,canny_edge))
     channel_ball_2 = np.uint8(np.multiply(np.float32(channel_ball_2)/255,canny_edge))
 
-    channel_ball_0 = cv2.GaussianBlur(channel_ball_0, (0,0), 1)
-    channel_ball_1 = cv2.GaussianBlur(channel_ball_1, (0,0), 1)
-    channel_ball_2 = cv2.GaussianBlur(channel_ball_2, (0,0), 1)
-    
-    channel_ball_0 = np.uint8(((np.float32(channel_ball_0)-75*np.ones((h,w)))*255).clip(min=0,max=255))
-    channel_ball_1 = np.uint8(((np.float32(channel_ball_1)-75*np.ones((h,w)))*255).clip(min=0,max=255))
-    channel_ball_2 = np.uint8(((np.float32(channel_ball_2)-75*np.ones((h,w)))*255).clip(min=0,max=255))
+#    channel_ball_0 = cv2.GaussianBlur(channel_ball_0, (0,0), 1)
+#    channel_ball_1 = cv2.GaussianBlur(channel_ball_1, (0,0), 1)
+#    channel_ball_2 = cv2.GaussianBlur(channel_ball_2, (0,0), 1)
+#    
+#    channel_ball_0 = cv2.GaussianBlur(channel_ball_0, (0,0), 1)
+#    channel_ball_1 = cv2.GaussianBlur(channel_ball_1, (0,0), 1)
+#    channel_ball_2 = cv2.GaussianBlur(channel_ball_2, (0,0), 1)
+#    
+#    channel_ball_0 = np.uint8(((np.float32(channel_ball_0)-25*np.ones((h,w)))*255).clip(min=0,max=255))
+#    channel_ball_1 = np.uint8(((np.float32(channel_ball_1)-25*np.ones((h,w)))*255).clip(min=0,max=255))
+#    channel_ball_2 = np.uint8(((np.float32(channel_ball_2)-25*np.ones((h,w)))*255).clip(min=0,max=255))
     
     if showplot == 1:
         cv2.imshow("green",channel_ball_0)
@@ -169,7 +173,11 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
             for k in range(0, sample_number):
                 pointX = int(round(circle_temp[counter].center[0] + 0.8*circle_temp[counter].radius * np.sin (2*k*pi/sample_number)))
                 pointY = int(round(circle_temp[counter].center[1] + 0.8*circle_temp[counter].radius * np.cos (2*k*pi/sample_number)))
-                pointColor = img[pointY, pointX]  # [IMPORTANT] Notice that in the index, x and y are reversed
+                
+                try:
+                    pointColor = img[pointY, pointX]  # [IMPORTANT] Notice that in the index, x and y are reversed
+                except:
+                    pointColor = 
                 #detected_color = color_detect(pointColor, blue_ref, green_ref, red_ref, ref_threshhold)
                 detected_color = color_detect(pointColor, color_detect3_threshhold)
                 
