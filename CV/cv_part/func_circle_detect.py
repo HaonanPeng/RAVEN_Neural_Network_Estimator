@@ -340,6 +340,9 @@ def auto_hough_circle(img, circle_numbers =1 , show_info=0 , circle_radius_min=0
             if show_info == 1:
                 print("Current Hough para2 = " + str(hough_para2))
                 
+    if circles.any() == None:
+        circles = np.zeros((1,1,3))
+                
     return circles    
     
 
