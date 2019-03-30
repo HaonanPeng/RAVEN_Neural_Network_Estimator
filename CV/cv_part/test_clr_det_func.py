@@ -13,7 +13,6 @@ img = cv2.imread(img_name)
 
 gray = cv2.cvtColor(np.uint8(img),cv2.COLOR_BGR2GRAY)
 
-
 gaussian_blur_para = 1
 end_signal_hough = 0
 while end_signal_hough == 0:

@@ -62,6 +62,9 @@ class img_processor:
     
     #ball center move range in system coordinate +- (mm/s)
     ball_move_range_3d = 20
+
+    #ball center movement decay rate
+    decay_rate = 0.5
     
     # signal indicating the first call
     first_call = 0
@@ -180,7 +183,8 @@ class img_processor:
 
         if index_iteration != 0:
             # update the reference_radius_max/min with time range between current and last effective one
-            update_ref_radius([list(range(self.camera_info.num_ball)) for _ in range(self.camera_info.num_cam)])
+            print([list(range(self.camera_info.num_cam)) for _ in range(self.camera_info.num_ball)])
+            update_ref_radius([list(range(self.camera_info.num_cam)) for _ in range(self.camera_info.num_ball)])
             # save the list of ball with effective frame from last time
             self.camera_info.listBall_effCam_last = self.camera_info.listBall_effCam
             
@@ -192,11 +196,6 @@ class img_processor:
             if len(self.camera_info.listBall_effCam[idx_ball])==0:
                 print('ball',idx_ball,'is not detected in any current camera frame, system suspend\n')
                 sys.exit(0)
-
-#########################################################################
-        print(self.camera_info.cam[0].img_ball_center)
-        print(self.camera_info.cam[0].img_ball_center_lastframe)
-#########################################################################
 
         # verify if the ball center 2D movement (effective frames) is in reasonable range
         listBall_effCam_remove = [[] for _ in range(self.camera_info.num_ball)]
@@ -213,6 +212,7 @@ class img_processor:
                         listBall_effCam_remove[idx_ball].append(idx_cam)#############################
                         print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n')  
         
+        # remove the ball-out-of-range cam-index from list 
         for idx_ball in range(self.camera_info.num_ball):
             if len(listBall_effCam_remove[idx_ball])!=0:
                 for i in range(len(listBall_effCam_remove[idx_ball])):
@@ -243,12 +243,8 @@ class img_processor:
         for idx_ball in range(self.camera_info.num_ball):
             if len(listBall_effCam_new[idx_ball])!=0:
                 for i in range(len([listBall_effCam_new[idx_ball]])):
-                    print(i)
-                    print(idx_ball)
-                    print(listBall_effCam_new)
                     idx_cam_new = listBall_effCam_new[idx_ball][i]
                     pass_sign = 1
-
                     for j in range(len(listBall_effCam_trust[idx_ball])):
                         idx_cam_trust = listBall_effCam_trust[idx_ball][j]
                         temp_ball_center = np.squeeze(self.camera_info.center_calculator(idx_ball,[idx_cam_new,idx_cam_trust]))
@@ -271,17 +267,22 @@ class img_processor:
         
         #update the cam with effective frame time stamp 
         for idx_ball in range(self.camera_info.num_ball):
-            for i in range(len(self.camera_info.listBall_effCam)):
-                idx_cam = self.camera_info.listBall_effCam[idx_ball][i]
+            for i in range(len(self.camera_info.listBall_effCam[idx_ball])):
+                idx_cam = self.camera_info.listBall_effCam[idx_ball][i]    
+                # add decay for the ball center movement
+                if index_iteration != 0:
+                    self.camera_info.cam[idx_cam].img_ball_center[idx_ball,:] = self.decay_rate * self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball,:] + (1 - self.decay_rate)*self.camera_info.cam[idx_cam].img_ball_center[idx_ball,:]
+                # update time of effective cam-frame (for each ball)     
                 self.time_eff_frame[idx_ball,idx_cam] = self.time_str_cur[idx_cam]
                 # save the img_ball_center from last frame
                 self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball] = self.camera_info.cam[idx_cam].img_ball_center[idx_ball]
                 # update the ball_move_rate_img with the half of max image radius
-                self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball] = self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]*3
+                self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball] = self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]*6
                 # update the ball circle radius range with decay
-                self.camera_info.cam[idx_cam].circle_radius_max = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_max+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius)
-                self.camera_info.cam[idx_cam].circle_radius_min = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_min+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius) 
-            
+                self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_max[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball])
+                self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_min[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]) 
+                
+
         list_uneff = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
             list_uneff[idx_ball] = [x for x in list(range(0,self.camera_info.num_cam)) if x not in self.camera_info.listBall_effCam[idx_ball]]

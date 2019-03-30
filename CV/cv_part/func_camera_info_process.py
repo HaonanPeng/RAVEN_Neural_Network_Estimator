@@ -39,7 +39,7 @@ class camera_info_definition():
     Cvector = None #vector of balls center to camera (System coordinate) in one frame
 
     circle_radius_threshold_decay = 0.9
-    circle_radius_expand = 10.0 # ball moves per second, the reference radius expand +- 3 pixel  
+    circle_radius_expand = 5.0 # ball moves per second, the reference radius expand +- 3 pixel  
     circle_radius_max = None  
     circle_radius_min = None
     
@@ -84,18 +84,7 @@ class camera_info:
         img_result_list = [None, None, None, None]
         self.listBall_effCam = [[] for _ in range(self.num_ball)] 
         for idx_cam in range(self.num_cam):
-            
             self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect_single_ball (img_input_list[idx_cam], showplot , self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max, self.cam[idx_cam].ref_color, self.num_ball, idx_cam)
-            
-#            [test] circle center decay
-            try:
-                for idx_ball in range(self.num_ball):
-                    if np.sum(self.cam[idx_cam].img_ball_center[idx_ball,:])!=0:
-                        self.cam[idx_cam].img_ball_center[idx_ball,:] = circle_center_decay * self.cam[idx_cam].img_ball_center_lastframe[idx_ball,:] + (1 - circle_center_decay)*self.cam[idx_cam].img_ball_center[idx_ball,:]
-            except:
-                a = 1
-#            [test]
-        
             self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
             for idx_ball in range(self.num_ball):  
                 if np.sum(self.cam[idx_cam].img_ball_center[idx_ball,:])!=0:
