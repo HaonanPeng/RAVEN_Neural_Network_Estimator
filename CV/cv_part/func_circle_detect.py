@@ -25,7 +25,8 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     img_origin = img
     pi = math.pi
     color_detect3_threshhold = 20
-    sample_number = 30
+    sample_number = 36
+    circle_trust_threshold = 0.25
     sign_carve = 0
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
@@ -35,15 +36,17 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     green = np.float32(img[:,:,1])
     blue = np.float32(img[:,:,0])   
 
-    red_new = (np.square(red/80)*800).clip(min=0,max=255)
-    green_new = (np.square(red/80)*800).clip(min=0,max=255)
-    blue_new = (np.square(red/80)*800).clip(min=0,max=255) 
+    red_new = (np.square(red/50)*800).clip(min=0,max=255)
+    green_new = (np.square(green/50)*800).clip(min=0,max=255)
+    blue_new = (np.square(blue/50)*800).clip(min=0,max=255) 
 
     new_img = np.zeros((h,w,3))
     new_img[:,:,0] = blue_new
     new_img[:,:,1] = green_new
     new_img[:,:,2] = red_new
+    
     gray = cv2.cvtColor(np.uint8(new_img),cv2.COLOR_BGR2GRAY)
+    
     gray_gauss_sum = np.zeros((h,w))
     for i in range(6):
         gray_gauss_sum += np.float32(cv2.GaussianBlur(gray, (0,0), i+1))
@@ -54,7 +57,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
 
-    canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 2),50,50)
+    canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 1),50,50)
     combine = np.zeros((h,w,3))
     for i in range(3):
         combine[:,:,i] += (np.float32(canny_edge)+np.float32(img[:,:,i])).clip(min=0,max=255)
@@ -177,11 +180,14 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
                 try:
                     pointColor = img[pointY, pointX]  # [IMPORTANT] Notice that in the index, x and y are reversed
                 except:
-                    pointColor = 
+                    pointColor = np.array([0,0,0])
                 #detected_color = color_detect(pointColor, blue_ref, green_ref, red_ref, ref_threshhold)
                 detected_color = color_detect(pointColor, color_detect3_threshhold)
-                
-                draw_color = img[pointY, pointX]
+                try:
+                    draw_color = img[pointY, pointX]
+                except:
+                    draw_color = np.array([0,0,0])
+                    
                 if np.sum(detected_color) > 1:
                     draw_color = np.array((255,255,255))
                 elif np.sum(detected_color) == 0:
@@ -197,6 +203,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     end_signal = 0    
     counter2 = 0
     filter1 = np.array([1, 1, 1])
+    circle_color_samples = np.array([circle_temp[0].color_vec,circle_temp[1].color_vec,circle_temp[2].color_vec])
     booled_color_vec = [np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0])]
     booled_color_vec[0] = boolize(circle_temp[0].color_vec)
     booled_color_vec[1] = boolize(circle_temp[1].color_vec)
@@ -204,6 +211,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     
     circle_centers = np.zeros((3,2))
     circle_radius = np.zeros(3)
+    circle_color_counter = np.zeros((3,3))
 
         
     if showplot == 1:
@@ -218,20 +226,23 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
             counter2 = counter2 + 1
             if counter2 > 50:
                 print("[ERROR]:Color assign failed, the can be because the colors are confusing, please check the threshold of the color dectect function")
-                return np.zeros((3, 2)), np.zeros(3), img
+                break
             continue
         else:
             if (filter1 *booled_color_vec[counter2 % 3])[0] == 1: #The circle is blue
                 circle_centers[0] = circle_temp[counter2 % 3].center
                 circle_radius[0] = circle_temp[counter2 % 3].radius
+                circle_color_counter[0] =  circle_color_samples[counter2 % 3]
                 filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
             elif (filter1 *booled_color_vec[counter2 % 3])[1] == 1:
                 circle_centers[1] = circle_temp[counter2 % 3].center
                 circle_radius[1] = circle_temp[counter2 % 3].radius
+                circle_color_counter[1] =  circle_color_samples[counter2 % 3]
                 filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
             elif (filter1 *booled_color_vec[counter2 % 3])[2] == 1:
                 circle_centers[2] = circle_temp[counter2 % 3].center
                 circle_radius[2] = circle_temp[counter2 % 3].radius
+                circle_color_counter[2] =  circle_color_samples[counter2 % 3]
                 filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
             else:
                 print("[ERROR] color assign failed")
@@ -239,8 +250,20 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
             end_signal = 1
         if counter2 > 50:
             print("[ERROR]:Color assign failed, the can be because the colors are confusing, please check the threshold of the color dectect function")
-            return np.zeros((3, 2)), np.zeros(3), img
-        counter2 = counter2 + 1      
+            break
+        counter2 = counter2 + 1  
+        
+    # If the detected colored sample points is less than the trust threshold, the circle will be muted
+    color_trust_threshold = circle_trust_threshold*sample_number
+    if circle_color_counter[0][0] < color_trust_threshold:
+        circle_centers[0] = np.zeros(2)
+        circle_radius[0] = 0
+    if circle_color_counter[1][1] < color_trust_threshold:
+        circle_centers[1] = np.zeros(2)
+        circle_radius[1] = 0
+    if circle_color_counter[2][2] < color_trust_threshold:
+        circle_centers[2] = np.zeros(2)
+        circle_radius[2] = 0
 
     cv2.circle(img_origin, (int(circle_centers[0][0]),int(circle_centers[0][1])), 1, (255, 50, 50), 1, 1, 0)
     cv2.circle(img_origin, (int(circle_centers[1][0]),int(circle_centers[1][1])), 1, (50, 255, 50), 1, 1, 0)
@@ -262,6 +285,13 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
+        
+    # #[test]: currently the circle is not seperated successfully, so if one circle is failed, the whole image is failed
+    # if (circle_radius[0]*circle_radius[1]*circle_radius[2]) == 0:
+    #     circle_centers = np.zeros((3,2))
+    #     circle_radius = np.zeros(3)
+    # #[test]
+    
     return circle_centers, circle_radius, img_origin
 
 
@@ -277,7 +307,7 @@ def auto_hough_circle(img, circle_numbers =1 , show_info=0 , circle_radius_min=0
         
         if gaussian_blur_para >=5:
             print("[ERROR]:Hough circle detect failed")
-            return np.zeros((circle_numbers,2)), np.zeros(circle_numbers)
+            return np.zeros((1,1,3))
     
         while end_signal_3 == 0:
             circles = cv2.HoughCircles(img,cv2.HOUGH_GRADIENT,1,40,
@@ -307,8 +337,11 @@ def auto_hough_circle(img, circle_numbers =1 , show_info=0 , circle_radius_min=0
             if hough_para2 <= 0:
                 hough_para2 = hough_para2 + hough_para2_inc +0.001
                 hough_para2_inc = hough_para2_inc/2
-            if show_info == 1:
-                print("Current Hough para2 = " + str(hough_para2))
+            # if show_info == 1:
+            #     print("Current Hough para2 = " + str(hough_para2))
+                
+    # if circles.any() == None:
+    #     circles = np.zeros((1,1,3))
                 
     return circles    
     
@@ -332,7 +365,8 @@ def color_detect (target_color, threshhold):
     return color
 
 # boolize function, takes array as input, and output a same sized array with only 0 or 1    
-def boolize (arr):
+def boolize (arr_origin):
+    arr = arr_origin
     for i in range(0, len(arr)):
         if arr[i] == 0:
             arr[i] = 0
