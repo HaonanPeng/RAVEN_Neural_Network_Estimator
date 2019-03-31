@@ -8,7 +8,7 @@ import sys
 # Main part of image processing
 class img_processor:
     
-    write_log = 0 # if 1, the console output will be write in to log file
+    write_log = 1 # if 1, the console output will be write in to log file
     
     # Data files path
     bagfile_folder_path = "bagfiles/"
@@ -65,6 +65,9 @@ class img_processor:
 
     #ball center movement decay rate
     decay_rate = 0.5
+
+    #minimum move distance
+    move_distance_base = 2 
     
     # signal indicating the first call
     first_call = 0
@@ -207,7 +210,7 @@ class img_processor:
                     move_distance_2d = np.linalg.norm(self.camera_info.cam[idx_cam].img_ball_center[idx_ball] - self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball])
                     # verify if movement is in reasonable range
                     dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_ball,idx_cam] # delta time step
-                    if move_distance_2d>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]):
+                    if move_distance_2d>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]+self.move_distance_base):
                         # remove uneffective camera index
                         listBall_effCam_remove[idx_ball].append(idx_cam)#############################
                         print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n')  
@@ -277,7 +280,7 @@ class img_processor:
                 # save the img_ball_center from last frame
                 self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball] = self.camera_info.cam[idx_cam].img_ball_center[idx_ball]
                 # update the ball_move_rate_img with the half of max image radius
-                self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball] = self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]*6
+                self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball] = self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]*2
                 # update the ball circle radius range with decay
                 self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_max[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball])
                 self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_min[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]) 

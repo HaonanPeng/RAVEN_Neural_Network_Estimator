@@ -353,7 +353,7 @@ def color_detect (target_color, threshhold):
     r = int(target_color[2])
     
     # green 
-    if ((b-r)>(-10)) & ((g-r)>30) & ((g-b)>15):
+    if ((b-r)>(-10)) & ((g-r)>20) & ((g-b)>15): 
         color[0] = 1
     # yellow    
     if ((g-r)<60) & ((r-b)>20) & ((g-b)>30):
