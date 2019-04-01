@@ -57,7 +57,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
 
-    canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 1),50,50)
+    canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 1),50,100)
     combine = np.zeros((h,w,3))
     for i in range(3):
         combine[:,:,i] += (np.float32(canny_edge)+np.float32(img[:,:,i])).clip(min=0,max=255)
