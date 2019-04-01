@@ -5,6 +5,7 @@ import time
 import func_camera_info_process
 import sys
 
+
 # Main part of image processing
 class img_processor:
     
@@ -174,15 +175,7 @@ class img_processor:
                         self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] += dt*self.camera_info.cam[idx_cam].circle_radius_expand
                         self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] -= dt*self.camera_info.cam[idx_cam].circle_radius_expand 
                     
-        def unupdate_ref_radius(list_unupdate):
-            for idx_ball in range(self.camera_info.num_ball):
-                if len(list_unupdate[idx_ball])!=0: 
-                    for i in range(len(list_unupdate[idx_ball])):
-                        idx_cam = int(list_unupdate[idx_ball][i])
-                        # updat reference circle radius
-                    dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_ball,idx_cam] # delta time step 
-                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] -= dt*self.camera_info.cam[idx_cam].circle_radius_expand
-                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] += dt*self.camera_info.cam[idx_cam].circle_radius_expand  
+        
 
         if index_iteration != 0:
             # update the reference_radius_max/min with time range between current and last effective one
@@ -192,7 +185,11 @@ class img_processor:
             self.camera_info.listBall_effCam_last = self.camera_info.listBall_effCam
             
         # detect and locate the ball center on image, generate list of camera with effective frame
-        self.img_cur = self.camera_info.ball_img_detect_locate(self.img_cur)
+        if index_iteration != 0:
+            self.img_cur = self.camera_info.ball_img_detect_locate(self.img_cur, carve_sign = 0)
+        else:
+            self.img_cur = self.camera_info.ball_img_detect_locate(self.img_cur, carve_sign = 0)
+            
 
         # if one of balls with no detection then quit sysetm
         for idx_ball in range(self.camera_info.num_ball):
@@ -242,7 +239,7 @@ class img_processor:
         # calculate ball-center world coordinate from trust
         self.ball_center = self.camera_info.ball_world_locate(listBall_effCam_trust)
 
-        # verify if the back-to-work frame is effectve, yes then add 
+        # verify if the back-to-work frame is effective, yes then add 
         for idx_ball in range(self.camera_info.num_ball):
             if len(listBall_effCam_new[idx_ball])!=0:
                 for i in range(len([listBall_effCam_new[idx_ball]])):
@@ -269,6 +266,7 @@ class img_processor:
         print('[Success]:ball_center updated:\n',self.ball_center,'\n\n')
         
         #update the cam with effective frame time stamp 
+        ref_radius_pool = np.array([])
         for idx_ball in range(self.camera_info.num_ball):
             for i in range(len(self.camera_info.listBall_effCam[idx_ball])):
                 idx_cam = self.camera_info.listBall_effCam[idx_ball][i]    
@@ -284,13 +282,25 @@ class img_processor:
                 # update the ball circle radius range with decay
                 self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_max[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball])
                 self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_min[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]) 
-                
+                # put the max and min reference radius into the reference pool
+                ref_radius_pool = np.append(ref_radius_pool,[self.camera_info.cam[idx_cam].circle_radius_max[idx_ball],self.camera_info.cam[idx_cam].circle_radius_min[idx_ball]])
 
+        # create reasonable range
+        ref_radius_max = np.max(ref_radius_pool)+0.2*(np.max(ref_radius_pool)-np.min(ref_radius_pool))
+        ref_radius_min = np.min(ref_radius_pool)-0.2*(np.max(ref_radius_pool)-np.min(ref_radius_pool))
+
+        # create uneffective list of frames of each ball
         list_uneff = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
             list_uneff[idx_ball] = [x for x in list(range(0,self.camera_info.num_cam)) if x not in self.camera_info.listBall_effCam[idx_ball]]
-        # roll back reference radius of uneffective frames
-        unupdate_ref_radius(list_uneff)
+        
+        # limit parameters of uneffective detection in reasonable range 
+        for idx_ball in range(self.camera_info.num_ball):
+            if len(list_uneff[idx_ball])!=0: 
+                for i in range(len(list_uneff[idx_ball])):
+                    idx_cam = int(list_uneff[idx_ball][i])
+                    self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] = np.min([ref_radius_max,self.camera_info.cam[idx_cam].circle_radius_max[idx_ball]])
+                    self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] = np.max([ref_radius_min,self.camera_info.cam[idx_cam].circle_radius_min[idx_ball]]) 
 
         
 

@@ -21,13 +21,13 @@ class circle_class:
     g = np.array([0,0])
     r = np.array([0,0])
 
-def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles_radius_max, ref_color, num_ball, idx_cam):
+def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles_radius_max, ref_color, num_ball, idx_cam, carve_sign, carve_center, carve_radius):
     img_origin = img
     pi = math.pi
     color_detect3_threshhold = 20
     sample_number = 36
     circle_trust_threshold = 0.25
-    sign_carve = 0
+    
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
 
@@ -126,15 +126,15 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     circle_2 = auto_hough_circle(channel_ball_2 , circle_numbers, showplot , np.int_(circles_radius_min[2]), np.int_(circles_radius_max[2]), hough_para, hough_para_inc, hough_para_threshold)
 
     ############### carve out image circle #############################
-    if sign_carve == 1:
-        mask_0 = cv2.circle(np.zeros((h,w)),(circle_0[0][0][0],circle_0[0][0][1]), int(circle_0[0][0][2]+5), 255, -1)
-        mask_0 = cv2.circle(mask_0,(circle_0[0][0][0],circle_0[0][0][1]), int(circle_0[0][0][2]-3), 0, -1)
+    if carve_sign == 1:
+        mask_0 = cv2.circle(np.zeros((h,w)),(carve_center[0][0],carve_center[0][1]), int(carve_radius[0]+5), 255, -1)
+        mask_0 = cv2.circle(mask_0,(carve_center[0][0],carve_center[0][1]), int(carve_radius[0]-3), 0, -1)
 
-        mask_1 = cv2.circle(np.zeros((h,w)),(circle_1[0][0][0],circle_1[0][0][1]), int(circle_1[0][0][2]+5), 255, -1)
-        mask_1 = cv2.circle(mask_1,(circle_1[0][0][0],circle_1[0][0][1]), int(circle_1[0][0][2]-3), 0, -1)
+        mask_1 = cv2.circle(np.zeros((h,w)),(carve_center[1][0],carve_center[1][1]), int(carve_radius[1]+5), 255, -1)
+        mask_1 = cv2.circle(mask_1,(carve_center[1][0],carve_center[1][1]), int(carve_radius[1]-3), 0, -1)
 
-        mask_2 = cv2.circle(np.zeros((h,w)),(circle_2[0][0][0],circle_2[0][0][1]), int(circle_2[0][0][2]+5), 255, -1)
-        mask_2 = cv2.circle(mask_2,(circle_2[0][0][0],circle_2[0][0][1]), int(circle_2[0][0][2]-3), 0, -1)
+        mask_2 = cv2.circle(np.zeros((h,w)),(carve_center[2][0],carve_center[2][1]), int(carve_radius[2]+5), 255, -1)
+        mask_2 = cv2.circle(mask_2,(carve_center[2][0],carve_center[2][1]), int(carve_radius[2]-3), 0, -1)
 
         channel_ball_0 = np.uint8(np.multiply(mask_0/255,channel_ball_0))
         channel_ball_1 = np.uint8(np.multiply(mask_1/255,channel_ball_1))

@@ -80,11 +80,14 @@ class camera_info:
             self.cam[idx_cam].ball_move_rate_img = np.ones((1,self.num_ball))*100.0
 
 
-    def ball_img_detect_locate(self,img_input_list):   
+    def ball_img_detect_locate(self, img_input_list, carve_sign = 0):   
         img_result_list = [None, None, None, None]
         self.listBall_effCam = [[] for _ in range(self.num_ball)] 
         for idx_cam in range(self.num_cam):
-            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect_single_ball (img_input_list[idx_cam], showplot , self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max, self.cam[idx_cam].ref_color, self.num_ball, idx_cam)
+            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect_single_ball (img_input_list[idx_cam], showplot, 
+                                                                                                                                                    self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max, 
+                                                                                                                                                    self.cam[idx_cam].ref_color, self.num_ball, idx_cam, 
+                                                                                                                                                    carve_sign, self.cam[idx_cam].img_ball_center_lastframe, self.cam[idx_cam].img_ball_radius)
             self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
             for idx_ball in range(self.num_ball):  
                 if np.sum(self.cam[idx_cam].img_ball_center[idx_ball,:])!=0:
