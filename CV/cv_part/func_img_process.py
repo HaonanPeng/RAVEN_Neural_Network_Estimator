@@ -207,7 +207,7 @@ class img_processor:
                     move_distance_2d = np.linalg.norm(self.camera_info.cam[idx_cam].img_ball_center[idx_ball] - self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball])
                     # verify if movement is in reasonable range
                     dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_ball,idx_cam] # delta time step
-                    if move_distance_2d>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]+self.move_distance_base):
+                    if (move_distance_2d+self.move_distance_base)>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]):
                         # remove uneffective camera index
                         listBall_effCam_remove[idx_ball].append(idx_cam)#############################
                         print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n')  
