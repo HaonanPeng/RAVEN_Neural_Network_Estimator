@@ -276,8 +276,8 @@ class img_processor:
                 self.time_eff_frame[idx_ball,idx_cam] = self.time_str_cur[idx_cam]
                 # save the img_ball_center from last frame
                 self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball] = self.camera_info.cam[idx_cam].img_ball_center[idx_ball]
-                # update the ball_move_rate_img with the half of max image radius
-                self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball] = self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]*2
+                # update the ball_move_rate_img with the four times of max image radius
+                self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball] = self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]*4
                 # update the ball circle radius range with decay
                 self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_max[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball])
                 self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] = self.camera_info.cam[idx_cam].circle_radius_threshold_decay*self.camera_info.cam[idx_cam].circle_radius_min[idx_ball]+(1-self.camera_info.cam[idx_cam].circle_radius_threshold_decay)*(self.camera_info.cam[idx_cam].img_ball_radius[idx_ball]) 
