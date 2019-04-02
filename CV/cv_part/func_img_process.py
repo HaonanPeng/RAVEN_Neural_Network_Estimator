@@ -175,11 +175,8 @@ class img_processor:
                         self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] += dt*self.camera_info.cam[idx_cam].circle_radius_expand
                         self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] -= dt*self.camera_info.cam[idx_cam].circle_radius_expand 
                     
-        
-
         if index_iteration != 0:
             # update the reference_radius_max/min with time range between current and last effective one
-            print([list(range(self.camera_info.num_cam)) for _ in range(self.camera_info.num_ball)])
             update_ref_radius([list(range(self.camera_info.num_cam)) for _ in range(self.camera_info.num_ball)])
             # save the list of ball with effective frame from last time
             self.camera_info.listBall_effCam_last = self.camera_info.listBall_effCam
@@ -218,7 +215,9 @@ class img_processor:
                 for i in range(len(listBall_effCam_remove[idx_ball])):
                     idx_cam = listBall_effCam_remove[idx_ball][i]
                     self.camera_info.listBall_effCam[idx_ball].remove(idx_cam)
-       
+
+        print('effective list (without back-to-work):',self.camera_info.listBall_effCam)
+
         # generate the list of trusted frame  (effective in both last time and current time)
         if index_iteration == 0:
             self.camera_info.listBall_effCam_last = self.camera_info.listBall_effCam
