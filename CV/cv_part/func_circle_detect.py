@@ -36,9 +36,9 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     green = np.float32(img[:,:,1])
     blue = np.float32(img[:,:,0])   
 
-    red_new = (np.square(red/50)*800).clip(min=0,max=255)
-    green_new = (np.square(green/50)*800).clip(min=0,max=255)
-    blue_new = (np.square(blue/50)*800).clip(min=0,max=255) 
+    red_new = (np.square(red/50)*900).clip(min=0,max=255)
+    green_new = (np.square(green/50)*900).clip(min=0,max=255)
+    blue_new = (np.square(blue/50)*900).clip(min=0,max=255) 
 
     new_img = np.zeros((h,w,3))
     new_img[:,:,0] = blue_new
@@ -57,7 +57,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
 
-    canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 1),50,100)
+    canny_edge = cv2.Canny(cv2.GaussianBlur(gray_gauss_sum, (0,0), 1),40,70)
     combine = np.zeros((h,w,3))
     for i in range(3):
         combine[:,:,i] += (np.float32(canny_edge)+np.float32(img[:,:,i])).clip(min=0,max=255)
@@ -106,9 +106,9 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.imshow("yellow",channel_ball_1)
         cv2.imshow("red",channel_ball_2)
         
-        cv2.imwrite("0green_blured_canny.jpg",channel_ball_0)
-        cv2.imwrite("0yellow_blured_canny.jpg",channel_ball_1)
-        cv2.imwrite("0red_blured_canny.jpg",channel_ball_2)
+        # cv2.imwrite("0green_blured_canny.jpg",channel_ball_0)
+        # cv2.imwrite("0yellow_blured_canny.jpg",channel_ball_1)
+        # cv2.imwrite("0red_blured_canny.jpg",channel_ball_2)
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
@@ -353,13 +353,13 @@ def color_detect (target_color, threshhold):
     r = int(target_color[2])
     
     # green 
-    if ((b-r)>(-10)) & ((g-r)>20) & ((g-b)>15): 
+    if ((b-r)>(-10)) & ((g-r)>15): 
         color[0] = 1
     # yellow    
     if ((g-r)<60) & ((r-b)>20) & ((g-b)>30):
         color[1] = 1
     # red     
-    if ((r-g)>50) & ((r-b)>10) & ((b-g)>10):
+    if ((r-g)>40) & ((r-b)>10) & ((b-g)>10):
         color[2] = 1
     
     return color

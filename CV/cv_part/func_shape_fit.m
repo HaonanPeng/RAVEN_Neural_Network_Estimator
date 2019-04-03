@@ -1,16 +1,17 @@
 close all, clear all, clc
 
 %% sample
+
 % holder center to ball center = 33 mm, holder center at origin
 ball_centers = [0, -33, 0; %ball_0
                 33, 0, 0;  %ball_1
                 0, 33, 0]; %ball_2          
 % add noise
-ball_centers = ball_centers+rand(3)
+ball_centers = ball_centers+rand(3);
 
 % v_x: center to yellow direction 
 % v_y: green to red direction
-[RAVEN_center,v_x,v_y] = end_effector_PR(ball_centers)
+[RAVEN_center,v_x,v_y] = end_effector_PR(ball_centers);
 
 
 %% function
