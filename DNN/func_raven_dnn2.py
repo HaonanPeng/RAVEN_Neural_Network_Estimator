@@ -25,6 +25,9 @@ import matplotlib.pyplot as plt
 
 from keras.utils import plot_model
 
+import func_decay_filter as fdf
+import func_name_ravenstate as name_ravenstate
+
 
 
 class raven_dnn_estimator:
@@ -194,10 +197,19 @@ class raven_dnn_estimator:
         
         
         #----------------------------------------------------------------------------------
-        np.savetxt ("test_data.txt", data )
-        np.savetxt ("test_label.txt", label )
+        folder_name = "data_folder/"
+        np.savetxt ( folder_name + "test_data.txt", data )
+        np.savetxt ( folder_name + "test_label.txt", label )
+        np.savetxt ( folder_name + "test_operation.txt", np.int_(operation_origin))
         
-        np.savetxt ("test_operation.txt", operation_origin)
+        #[BUG] Currently cannot load string txt file as usable list
+#        data_name_file = open("test_data_name.txt" , "w")
+#        for content in data_name:
+#            data_name_file.write(content + "\n")
+#            
+#        label_name_file = open("test_label_name.txt" , "w")
+#        for content in label_name:
+#            label_name_file.write(content + "\n")
         
         # Set initial values for the objects in the class
         self.data_origin = data
@@ -219,22 +231,41 @@ class raven_dnn_estimator:
         return data, label, operation_origin
     
     # [UNFINISHED] Load data from txt file
-    def load_txt_data(self, data = None, label = None, operation_origin = None, data_name = None, label_name = None):
-        data_file_name = "test_data_RotationMatrix.txt"
-        label_file_name = "test_label_RotationMatrix.txt"
-        operation_file_name = "test_operation_raven.txt"
+    def load_data(self, data = None, label = None, operation_origin = None, data_name = None, label_name = None):
+        folder_name = "data_folder/"
+        
+        data_file_name = folder_name + "test_data.txt"
+        label_file_name = folder_name + "test_label.txt"
+        operation_file_name = folder_name + "test_operation.txt"
         
         
         print_dash_line()
-        print("[RAVEN_DNN]: Load data from txt files")
+        print("[RAVEN_DNN]: Loading data ")
         
-        if data == None:
-#            data = np.array([np.loadtxt(data_file_name)])
-            data = np.loadtxt(data_file_name)
-        if label == None:
-            label = np.loadtxt(label_file_name)
-#        if operation_origin == None:
-#            operation_origin = np.loadtxt(operation_file_name)
+        try:
+            if data == None:
+                print("[RAVEN_DNN]:No data provided, trying to load data from txt file")
+                data = np.loadtxt(data_file_name)
+                try:
+                    test_dimesion = data.shape[1]
+                except:
+                    data = np.array([data])
+            if label == None:
+                print("[RAVEN_DNN]:No label provided, trying to load label from txt file")
+                label = np.loadtxt(label_file_name)
+                try:
+                    test_dimesion = label.shape[1]
+                except:
+                    label = np.array([label])
+            if operation_origin == None:
+                print("[RAVEN_DNN]:No operation provided, trying to load operation from txt file")
+                operation_origin = np.int_(np.loadtxt(operation_file_name))
+                try:
+                    test_dimesion = operation_origin.shape[1]
+                except:
+                    operation_origin = np.array([operation_origin])
+        except:
+            print("[RAVEN_DNN]:ERROR: Loading data from txt failed, please check the folder")
             
         self.data_origin = data
         self.data_raw = data
@@ -250,13 +281,15 @@ class raven_dnn_estimator:
         self.normalize_matrix_data = np.zeros((data.shape[0],2))
         self.normalize_matrix_label = np.zeros((label.shape[0],2))
         print("[RAVEN_DNN]: All data loaded")
+        
+        print_dash_line()
         return None
     
     # Initialize the system, then the system will be ready to train DNN, and add new features will be available
     def init_system(self):
-        self.generate_data()
         self.set_percent()
         self.set_shuffle_seed()
+        self.generate_data()
         self.normalize_data()
         self.load_dnn_sets()
         self.update_feature_name()
@@ -267,8 +300,8 @@ class raven_dnn_estimator:
     # Updata data raw from data_origin to data_raw, according to operation matrix
     def generate_data(self):
         # Rearrange the data_raw to fit the size
-        self.data_raw = np.zeros((self.operation_matrix.shape[0], self.data_origin.shape[1]))
-        
+        self.data_raw = np.zeros((self.data_origin.shape[0], self.data_origin.shape[1]))
+        self.init_dnn_sets_shape()
         for index in range(0,self.operation_matrix.shape[0]):
             operation_pair = self.operation_matrix[index]
             operation_object = operation_pair[0]
@@ -277,8 +310,9 @@ class raven_dnn_estimator:
             if operation_type == -1: # Original data, do nothing
                 new_line = self.data_origin[index]
             else:
-                new_line = self.generate_new_feature_line(self, operation_pair)
+                new_line = self.add_new_feature([operation_pair], arg = [None], show_report = False)
             self.data_raw[index] = new_line
+            
                 
     def normalize_data(self):
         # Rearrange the normalize matrix to fit the size
@@ -301,10 +335,11 @@ class raven_dnn_estimator:
     
     # Load DNN sets( such as training set, including labels), after this, the system will be ready to train DNN       
     def load_dnn_sets(self):
+        #Initialize the shape
         self.data_train = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_train)))
         self.data_vali = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_vali)))
         self.data_test = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_test)))
-        
+        #Initialize the shape
         self.label_train = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_train)))
         self.label_vali = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_vali)))
         self.label_test = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_test)))
@@ -320,6 +355,19 @@ class raven_dnn_estimator:
             self.label_train[line_index] = label_line[self.shuffle_seed_train]
             self.label_vali[line_index] = label_line[self.shuffle_seed_vali]
             self.label_test[line_index] = label_line[self.shuffle_seed_test]
+            
+    def init_dnn_sets_shape(self):
+        #Initialize the shape
+        self.data_train = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_train)))
+        self.data_vali = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_vali)))
+        self.data_test = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_test)))
+        #Initialize the shape
+        self.label_train = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_train)))
+        self.label_vali = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_vali)))
+        self.label_test = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_test)))
+        
+        return None
+        
     
     # set operation pool            
     def set_operation_pool(self, operation_pool):
@@ -335,7 +383,10 @@ class raven_dnn_estimator:
                 return None
             
             if operation_type == 1: # take derivative
-                new_line = np.gradient(self.data_raw[operation_object], 0.1 ,edge_order = 2)
+                if arg ==[None]:
+                    new_line = np.gradient(self.data_raw[operation_object], 0.001 ,edge_order = 2)
+                else:
+                    filtered_object = 0 #[Unfinished]
                 
             elif operation_type == 2: # power
                 origin_object = operation_object
@@ -361,7 +412,7 @@ class raven_dnn_estimator:
             elif operation_type == 6: # Intergral
                 new_line = np.zeros(self.data_raw[operation_object].shape)
                 for inter_lenth in range(0, self.data_raw[operation_object].shape[0]):
-                  new_line[inter_lenth] = np.trapz(self.data_raw[operation_object][0:inter_lenth], x = arg[0], dx = 0.1)
+                  new_line[inter_lenth] = np.trapz(self.data_raw[operation_object][0:inter_lenth], x = arg[0], dx = 0.001)
             
             elif operation_type == 7: # Square root
                 if self.data_raw[operation_object].min() > 0:
@@ -390,7 +441,7 @@ class raven_dnn_estimator:
     def update_feature_name(self):
         name_data_origin = self.get_name_data_origin()
         self.name_data = name_data_origin
-        
+        self.operation_matrix = np.int_(self.operation_matrix) # Make sure all the elements are int type
         for line_index in range(0, self.operation_matrix.shape[0]):
             if self.operation_matrix[line_index][0] == -1:
                 continue
@@ -498,6 +549,7 @@ class raven_dnn_estimator:
         for operation_pair in operation:
             # First, update data_raw
             new_line = self.generate_new_feature_line(operation_pair, arg = arg)
+            new_line_raw = new_line
             self.data_raw = np.append(self.data_raw,[new_line], axis=0)
             
             # Next, update data_normaled and normalize_data_matrix
@@ -517,6 +569,7 @@ class raven_dnn_estimator:
             self.update_feature_name()
             if show_report == True:
                 print("[RAVEN_DNN]: New feature added -- " + self.name_data[-1])
+        return new_line_raw
             
             
             
@@ -732,7 +785,7 @@ class raven_dnn_estimator:
         self.dnn_model.add(out_layer)
         
         # Set optimizer
-        optimizer = tf.train.RMSPropOptimizer(learning_rate)
+        optimizer = keras.optimizers.RMSprop(lr=learning_rate, rho=0.9, epsilon=None, decay=0.0)
         
         # Compile the DNN model
         self.dnn_model.compile(loss='mse',
@@ -773,7 +826,7 @@ class raven_dnn_estimator:
         
         return mae
        
-    # Interative the training, with automatical adding features    
+    # Interative the training, with automatic adding features    
     def dnn_iter_train(self, 
                        layers_matrix = [[1,20],[2,15],[3,10]],
                        learning_rate = 0.001,
@@ -994,11 +1047,33 @@ class raven_dnn_estimator:
         
         
     # Plot mdeol
-    def dnn_plot_model(self, file_name = 'Raven_dnn_model.png'):
+    def dnn_plot_model(self, file_name = 'plot_raven_dnn_model.png'):
         plot_model(self.dnn_model, to_file = file_name, 
                    show_shapes=True, 
                    show_layer_names=True, 
                    rankdir='TB')
+        
+    def dnn_save_model(self, folder_name = 'raven_dnn_model/'):
+        
+        self.dnn_model.save(folder_name + 'model_raven_dnn.h5') # save dnn model
+        np.savetxt(folder_name + 'operation_matrix.txt', self.operation_matrix)
+        
+        print_dash_line()
+        print("[RAVEN_DNN]: DNN model saved --- Folder Name: " + folder_name)
+        print_dash_line()
+        
+    def dnn_load_model(self, folder_name = 'raven_dnn_model/'):
+        print_dash_line()
+        self.dnn_model = keras.models.load_model(folder_name + 'model_raven_dnn.h5')
+        self.operation_matrix = np.loadtxt(folder_name + 'operation_matrix.txt')
+        
+#        self.data_normaled = np.zeros(self.data.shape)
+#        self.label_normaled = np.zeros(label.shape)
+#        self.normalize_matrix_data = np.zeros((data.shape[0],2))
+#        self.normalize_matrix_label = np.zeros((label.shape[0],2))
+        
+        print("[RAVEN_DNN]: DNN model loaded --- Folder Name: " + folder_name)
+        print_dash_line()
         
     # Check GPU available
     def check_gpu(self):

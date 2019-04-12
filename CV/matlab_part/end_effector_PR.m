@@ -1,4 +1,4 @@
-function  [RAVEN_center,v_x,v_y] = end_effector_PR(ball_centers)
+function  [RAVEN_center,T_matrix] = end_effector_PR(ball_centers)
     % holder center to ball center 
     distance = 33;
     
@@ -53,8 +53,10 @@ function  [RAVEN_center,v_x,v_y] = end_effector_PR(ball_centers)
         2*(b*d - a*c), 2*(c*d + a*b), a*a + d*d - b*b - c*c];
 
     v_x = (R*(p1'-center')/norm(p1-center))';
-    v_y = cross(n,v_x);
+    v_y = -cross(n,v_x);
+    v_z = cross(v_x,v_y);
     
     % the RAVENcenter is at (-14.5mm, 0) 
     RAVEN_center = center+v_x*(-14.5);
+    T_matrix = [[v_x,0]',[v_y,0]',[v_z,0]',[RAVEN_center,1]'];
 end

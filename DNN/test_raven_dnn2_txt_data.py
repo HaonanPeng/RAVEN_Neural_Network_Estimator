@@ -9,10 +9,10 @@ import time
 
 raven_dnn = frd.raven_dnn_estimator()
 
-raven_dnn.load_txt_data(data = None, 
+raven_dnn.load_data(data = None, 
                         label = None, 
-                        operation_origin = np.int_(-1*np.ones((2,2))), 
-                        data_name = ["w", "w_p"], 
+                        operation_origin = None, 
+                        data_name = ["w"], 
                         label_name = ["x","y","z"])
 
 #raven_dnn.load_txt_data(data = None, 
@@ -41,7 +41,7 @@ raven_dnn.dnn_iter_train(layers_matrix = [[1,50],[2,40], [3,30]],
                            batch_size = 600,
                            dropping_threshold = 0.05,
                            max_added_features = 10, 
-                           max_iteration = 20, 
+                           max_iteration = 0, 
                            show_plot = False)
 
 

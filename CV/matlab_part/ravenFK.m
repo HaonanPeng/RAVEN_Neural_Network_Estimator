@@ -19,7 +19,8 @@ Lw=0.01612*mtoMicrometer;
 
 T=DHcalculator(0,0,0,th1)*DHcalculator(La12,0,0,th2)*DHcalculator(pi-La23,0,d3,pi/2)*DHcalculator(0,La3,d4,th4)*DHcalculator(pi/2,0,0,th5);%*DHcalculator(pi/2,Lw,0,th6);
 
+T(1,4) = T(1,4);
 T(3,4) = -T(3,4);
 T(2,4) = -T(2,4);
-T(1,4) = T(1,4);
+
 end
