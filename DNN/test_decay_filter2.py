@@ -8,10 +8,10 @@ import numpy as np
 import func_decay_filter as fdf
 import matplotlib.pyplot as plt
 
-final_time = 2
+final_time = 4
 raven_hz = 1000
 dx = (1/raven_hz)
-decay_rate = 0.01
+decay_rate = 0.005
 max_idx = final_time * raven_hz
 idx = range(0,final_time)
 time = np.linspace(0,final_time,max_idx)

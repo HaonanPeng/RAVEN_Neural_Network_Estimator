@@ -6,6 +6,51 @@ Created on Wed Apr 10 18:36:51 2019
 """
 import numpy as np
 
+# CV result name ------------------------------------------------------------------------------
+name_CV_result = [None]*32
+name_CV_result[0] = 'time'
+
+name_CV_result[1] = 'end effector center x'
+name_CV_result[2] = 'end effector center y'
+name_CV_result[3] = 'end effector center z'
+
+name_CV_result[4] = 'T matrix 1'
+name_CV_result[5] = 'T matrix 2'
+name_CV_result[6] = 'T matrix 3'
+name_CV_result[7] = 'T matrix 4'
+name_CV_result[8] = 'T matrix 5'
+name_CV_result[9] = 'T matrix 6'
+name_CV_result[10] = 'T matrix 7'
+name_CV_result[11] = 'T matrix 8'
+name_CV_result[12] = 'T matrix 9'
+name_CV_result[13] = 'T matrix 10'
+name_CV_result[14] = 'T matrix 11'
+name_CV_result[15] = 'T matrix 12'
+name_CV_result[16] = 'T matrix 13'
+name_CV_result[17] = 'T matrix 14'
+name_CV_result[18] = 'T matrix 15'
+name_CV_result[19] = 'T matrix 16'
+
+name_CV_result[20] = 'ball_1 center x'
+name_CV_result[21] = 'ball_1 center y'
+name_CV_result[22] = 'ball_1 center z'
+name_CV_result[23] = 'ball_2 center x'
+name_CV_result[24] = 'ball_2 center y'
+name_CV_result[25] = 'ball_2 center z'
+name_CV_result[26] = 'ball_3 center x'
+name_CV_result[27] = 'ball_3 center y'
+name_CV_result[28] = 'ball_3 center z'
+
+name_CV_result[29] = 'end effector difference x'
+name_CV_result[30] = 'end effector difference y'
+name_CV_result[31] = 'end effector difference z'
+
+
+
+
+
+# ravenstate name------------------------------------------------------------------------------
+
 name_ravenstate = [None]*235
 
 name_ravenstate[0] = 'time'
