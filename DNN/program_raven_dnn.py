@@ -21,7 +21,7 @@ ravenstate , img_process_result = flr.load_ravenstate_step1()
 ravenstate , time_data , time_label = flr.load_ravenstate_step2(ravenstate , img_process_result)
 seed_ravenstate_idx = flr.load_ravenstate_step3(time_data , time_label)
 
-#selected_features = np.array([[1,4],[81,89],[113,121]])
+#selected_features = np.array([[113,116],[1,4]])
 selected_features = np.array([[1,4]])
 selected_labels = np.array([[29,32]])
 name_ravenstate , name_CV_result , feature_selection , label_selection , training_data , training_label , data_name , label_name , operation_origin = flr.load_ravenstate_step4(ravenstate , img_process_result , selected_features , selected_labels)
@@ -48,15 +48,15 @@ raven_dnn.set_operation_pool([1,2,3,4,5,7])
 #raven_dnn.dnn_model_init([[1,10],[2,10]])
 #raven_dnn.dnn_train(100,100)
 
-raven_dnn.dnn_iter_train(layers_matrix = [[1,300],[2,300], [3,300]],
+raven_dnn.dnn_iter_train(layers_matrix = [[1,300],[2,300]],
                            learning_rate = 0.001,
-                           regularize_rate = 0.001,
+                           regularize_rate = 0,
                            EPOCHS = 2000, 
                            batch_size = 2000,
                            dropping_threshold = 0.05,
                            max_added_features = 10, 
-                           max_iteration = 20, 
-                           show_plot = False)
+                           max_iteration = 0, 
+                           show_plot = True)
 
 raven_dnn.dnn_make_prediction()
 raven_dnn.dnn_plot_model()

@@ -27,8 +27,8 @@ def moving_average_filter(data, window_size):
 def mov_avr_derivative(data, dt ,window_size):
     filtered_data = moving_average_filter(data, window_size)
     derivative = np.gradient(filtered_data, dt, edge_order = 2)
-#    filtered_derivative = moving_average_filter(derivative, window_size)
-    return derivative
+    filtered_derivative = moving_average_filter(derivative, window_size)
+    return filtered_derivative
 
 
 

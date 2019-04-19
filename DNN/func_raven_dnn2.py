@@ -769,7 +769,8 @@ class raven_dnn_estimator:
         # Define leaky RELU
         
         # Input layer
-        input_layer = layers.Dense(10, 
+        size_input_layer = layers_matrix[0][1]
+        input_layer = layers.Dense(size_input_layer, 
                                      activation='relu', 
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
