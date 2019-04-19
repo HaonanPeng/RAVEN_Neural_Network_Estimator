@@ -6,6 +6,21 @@ Created on Wed Apr 10 18:36:51 2019
 """
 import numpy as np
 
+def name_list_generator(name_list , selected_idx):
+    output_list = [name_list[selected_idx[0]]]
+    
+    for idx in range(1,np.size(selected_idx)):
+        new_name = [name_list[selected_idx[idx]]]
+        output_list.extend(new_name)
+    return output_list
+
+def selected_idx_generator (input_matrix):
+    idx_selection = np.array([])
+    for line in input_matrix:
+        idx_selection = np.append(idx_selection, np.array(range(line[0],line[1])))
+    idx_selection = np.int_(idx_selection)
+    return idx_selection
+
 # CV result name ------------------------------------------------------------------------------
 name_CV_result = [None]*32
 name_CV_result[0] = 'time'

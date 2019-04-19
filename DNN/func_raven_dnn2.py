@@ -25,7 +25,7 @@ import matplotlib.pyplot as plt
 
 from keras.utils import plot_model
 
-import func_decay_filter as fdf
+import func_filters as ff
 import func_name_ravenstate as name_ravenstate
 
 
@@ -79,6 +79,13 @@ class raven_dnn_estimator:
     label_train = None
     label_vali = None
     label_test = None
+    
+    # signal indecating using ravenstate like signal or not. If =1, means feature rate is larger than label rate, this will benefit taking derivative
+    # if raven_data_signal=1, then the following two time must be provided to find index 
+    raven_data_signal = None
+    time_data = None
+    time_label = None
+    seed_ravenstate_idx = None # this will record the index of ravenstate that is consistent to the label time
     
     #--------------------------------------------------------------------------
     # DNN relatives
@@ -226,12 +233,14 @@ class raven_dnn_estimator:
         self.normalize_matrix_data = np.zeros((data.shape[0],2))
         self.normalize_matrix_label = np.zeros((label.shape[0],2))
         
+        self.raven_data_signal = 0
+        
         print("[RAVEN_DNN]: Using testing data, more details can be found in <func_raven_dnn.py>")
         
         return data, label, operation_origin
     
     # [UNFINISHED] Load data from txt file
-    def load_data(self, data = None, label = None, operation_origin = None, data_name = None, label_name = None):
+    def load_data(self, data = None, label = None, operation_origin = None, data_name = None, label_name = None, raven_data_signal = 0, time_data = None, time_label = None , seed_ravenstate_idx = None):
         folder_name = "data_folder/"
         
         data_file_name = folder_name + "test_data.txt"
@@ -267,6 +276,12 @@ class raven_dnn_estimator:
         except:
             print("[RAVEN_DNN]:ERROR: Loading data from txt failed, please check the folder")
             
+        self.raven_data_signal = raven_data_signal
+        
+        if self.raven_data_signal == 1:
+            self.seed_ravenstate_idx = np.int_(seed_ravenstate_idx)
+            print("[RAVEN_DNN]: Using RAVEN data, index initialized")
+            
         self.data_origin = data
         self.data_raw = data
         self.label_origin = label
@@ -276,7 +291,7 @@ class raven_dnn_estimator:
         self.name_data = data_name
         self.name_label = label_name
         
-        self.data_normaled = np.zeros(data.shape)
+        self.data_normaled = np.zeros((data.shape[0],label.shape[1]))
         self.label_normaled = np.zeros(label.shape)
         self.normalize_matrix_data = np.zeros((data.shape[0],2))
         self.normalize_matrix_label = np.zeros((label.shape[0],2))
@@ -312,26 +327,39 @@ class raven_dnn_estimator:
             else:
                 new_line = self.add_new_feature([operation_pair], arg = [None], show_report = False)
             self.data_raw[index] = new_line
-            
                 
     def normalize_data(self):
         # Rearrange the normalize matrix to fit the size
         self.normalize_matrix_data = np.zeros((self.data_raw.shape[0],2))
         self.normalize_matrix_label = np.zeros((self.label_origin.shape[0],2))
         
-        # Normalize data
-        for line_index in range(0, self.data_raw.shape[0]):
-            data_line_nor, mean, std = self.normalize_line(self.data_raw[line_index])
-            self.normalize_matrix_data[line_index] = [mean, std]
-            self.data_normaled[line_index] = data_line_nor
-            
-        # Normalize label
-        for line_index in range(0, self.label_origin.shape[0]):
-            data_line_nor, mean, std = self.normalize_line(self.label_origin[line_index])
-            self.normalize_matrix_label[line_index] = [mean, std]
-            self.label_normaled[line_index] = data_line_nor
-        
+        if self.raven_data_signal == 0:
+            # Normalize data
+            for line_index in range(0, self.data_raw.shape[0]):
+                data_line_nor, mean, std = self.normalize_line(self.data_raw[line_index])
+                self.normalize_matrix_data[line_index] = [mean, std]
+                self.data_normaled[line_index] = data_line_nor
+                
+            # Normalize label
+            for line_index in range(0, self.label_origin.shape[0]):
+                data_line_nor, mean, std = self.normalize_line(self.label_origin[line_index])
+                self.normalize_matrix_label[line_index] = [mean, std]
+                self.label_normaled[line_index] = data_line_nor
+                
+        if self.raven_data_signal == 1:
+            # Normalize data
+            for line_index in range(0, self.data_raw.shape[0]):
+                data_line_nor, mean, std = self.normalize_line(self.data_raw[line_index][self.seed_ravenstate_idx])
+                self.normalize_matrix_data[line_index] = [mean, std]
+                self.data_normaled[line_index] = data_line_nor
+                
+            # Normalize label
+            for line_index in range(0, self.label_origin.shape[0]):
+                label_line_nor, mean, std = self.normalize_line(self.label_origin[line_index])
+                self.normalize_matrix_label[line_index] = [mean, std]
+                self.label_normaled[line_index] = label_line_nor
         print("[RAVEN_DNN]: Data normalization finished")
+        
     
     # Load DNN sets( such as training set, including labels), after this, the system will be ready to train DNN       
     def load_dnn_sets(self):
@@ -385,8 +413,8 @@ class raven_dnn_estimator:
             if operation_type == 1: # take derivative
                 if arg ==[None]:
                     new_line = np.gradient(self.data_raw[operation_object], 0.001 ,edge_order = 2)
-                else:
-                    filtered_object = 0 #[Unfinished]
+                elif self.raven_data_signal == 1:
+                    new_line = ff.mov_avr_derivative(self.data_raw[operation_object], 0.001 , window_size = 501)
                 
             elif operation_type == 2: # power
                 origin_object = operation_object
@@ -512,7 +540,7 @@ class raven_dnn_estimator:
         return
     
     def set_shuffle_seed(self):
-        size_total = np.size(self.data_origin[0])
+        size_total = np.size(self.label_origin[0])
         shuffle_poor = np.arange(size_total)
         np.random.shuffle(shuffle_poor)
         
@@ -553,7 +581,7 @@ class raven_dnn_estimator:
             self.data_raw = np.append(self.data_raw,[new_line], axis=0)
             
             # Next, update data_normaled and normalize_data_matrix
-            new_line_nor, mean , std = self.normalize_line(new_line)
+            new_line_nor, mean , std = self.normalize_line(new_line[self.seed_ravenstate_idx])
             self.normalize_matrix_data = np.append(self.normalize_matrix_data, [[mean, std]], axis = 0)
             self.data_normaled = np.append(self.data_normaled, [new_line_nor], axis = 0)
             
@@ -800,7 +828,7 @@ class raven_dnn_estimator:
             print('.', end='')
         
         # Set early stop
-        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.005, patience=10, 
+        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=100, 
                                       verbose=0, mode='min', baseline=None)
         
         EPOCHS = EPOCHS
@@ -924,10 +952,16 @@ class raven_dnn_estimator:
         
         if data_input == None:
             print("[RAVEN_DNN]: No input provided, using raw data")
-            data_input = self.data_raw
+            if self.raven_data_signal == 0:
+                data_input = self.data_raw
+            elif self.raven_data_signal == 1:
+                toggled_seed_ravenstate = self.seed_ravenstate_idx[range(0,self.seed_ravenstate_idx.size,20)]
+                data_input = self.data_raw[:,[toggled_seed_ravenstate]]
         if output_truth == None:
             print("[RAVEN_DNN]: No ground truth provided, using original label")
-            output_truth = self.label_origin
+            output_truth = self.label_origin[:,[range(0,self.label_origin.shape[1],20)]]
+        data_input = np.squeeze(data_input)
+        output_truth = np.squeeze(output_truth)
         # First, normalize the data
         input_nor = np.zeros(data_input.shape)
         line_index = 0

@@ -7,6 +7,4 @@ Created on Sat Apr 13 10:32:21 2019
 
 import numpy as np
 
-array = np.array([0,1,2,3,4,5,6,7,8,9,10,11,12,13,14])
-
-c = array[(7-3):(7+3)]
+array_test = np.array([range(1,4)  range(81,89) range(113,121)])
