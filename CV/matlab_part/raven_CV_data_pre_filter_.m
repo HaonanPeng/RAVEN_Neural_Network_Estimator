@@ -1,7 +1,7 @@
 close all, clear all ,clc
 
-ball_traj_frameWorld_CV = importdata('img_process_result_traj1.txt');
-result_file_name = 'img_process_result_traj1_filtered.txt';
+ball_traj_frameWorld_CV = importdata('img_process_result_traj3.txt');
+result_file_name = 'img_process_result_traj3_filtered.txt';
 
 windowSize = 21;
 

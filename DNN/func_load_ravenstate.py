@@ -11,9 +11,9 @@ import func_name_ravenstate as fnr
 # These functions are set because this part of code is very slow, for multiple running, this part needs to be run only once.
 # It will provide variables about ravenstate and index seeds
 
-def load_ravenstate_step1():
-    ravenstate = np.loadtxt('training_ravenstate.txt').T
-    img_process_result = np.loadtxt('training_img_process_result.txt').T
+def load_ravenstate_step1(file_path_feature, file_path_label):
+    ravenstate = np.loadtxt(file_path_feature).T
+    img_process_result = np.loadtxt(file_path_label).T
     return ravenstate , img_process_result
 
 def load_ravenstate_step2(ravenstate , img_process_result):

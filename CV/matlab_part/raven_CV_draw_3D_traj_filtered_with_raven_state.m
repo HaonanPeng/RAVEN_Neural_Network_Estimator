@@ -1,11 +1,11 @@
 close all, clear all, clc
 
-ball_traj_frameWorld_CV = importdata('img_process_result_traj1_filtered.txt');
-raven_center_traj_frameWorld_CV = importdata('img_process_result_traj1_raven_center_filtered.txt');
-raven_state = importdata('raven_state_traj1_toggled.txt');
+ball_traj_frameWorld_CV = importdata('img_process_result_traj2_filtered.txt');
+raven_center_traj_frameWorld_CV = importdata('img_process_result_traj2_raven_center_filtered.txt');
+raven_state = importdata('raven_state_traj2_toggled.txt');
 
-ball_traj_frameWorld_CV_unfiltered = importdata('img_process_result_traj1.txt');
-raven_center_traj_frameWorld_CV_unfiltered = importdata('img_process_result_traj1_raven_center.txt');
+ball_traj_frameWorld_CV_unfiltered = importdata('img_process_result_traj2.txt');
+raven_center_traj_frameWorld_CV_unfiltered = importdata('img_process_result_traj2_raven_center.txt');
 
 um2mm = 0.001;
 
@@ -43,7 +43,7 @@ hold on
 plot3(ball_traj_frameWorld_CV(:,6),ball_traj_frameWorld_CV(:,7),ball_traj_frameWorld_CV(:,8),'y')
 plot3(ball_traj_frameWorld_CV(:,9),ball_traj_frameWorld_CV(:,10),ball_traj_frameWorld_CV(:,11),'r')
 
-plot3(raven_center_traj_frameWorld_CV(:,1),raven_center_traj_frameWorld_CV(:,2),raven_center_traj_frameWorld_CV(:,3),'linewidth',2)
+plot3(raven_center_traj_frameWorld_CV(:,2),raven_center_traj_frameWorld_CV(:,3),raven_center_traj_frameWorld_CV(:,4),'linewidth',2)
 
 xlabel('x(mm)')
 ylabel('y(mm)')
@@ -67,7 +67,7 @@ raven_center_traj_frameWorld_ravenstate = raven_center_traj_frameWorld_T_ravenst
 
 
 fig2 = figure();
-plot3(raven_center_traj_frameWorld_CV(:,1),raven_center_traj_frameWorld_CV(:,2),raven_center_traj_frameWorld_CV(:,3))
+plot3(raven_center_traj_frameWorld_CV(:,2),raven_center_traj_frameWorld_CV(:,3),raven_center_traj_frameWorld_CV(:,4))
 hold on 
 plot3(raven_center_traj_frameWorld_ravenstate(:,1),raven_center_traj_frameWorld_ravenstate(:,2),raven_center_traj_frameWorld_ravenstate(:,3))
 xlabel('x(mm)')
@@ -85,10 +85,10 @@ time_ravenstate = raven_state(:,1)-ball_traj_frameWorld_CV(1,2) + time_differenc
 time_CV = ball_traj_frameWorld_CV(:,2)-ball_traj_frameWorld_CV(1,2)-time_decay;
 time_CV_unfiltered = ball_traj_frameWorld_CV_unfiltered(:,2)-ball_traj_frameWorld_CV(1,2)-time_decay;
 
-raven_pos_x_frameWorld_CV = raven_center_traj_frameWorld_CV(:,1);
+raven_pos_x_frameWorld_CV = raven_center_traj_frameWorld_CV(:,2);
 
 fig3 = figure();
-plot(time_CV_unfiltered,raven_center_traj_frameWorld_CV_unfiltered(:,1),'g--')
+plot(time_CV_unfiltered,raven_center_traj_frameWorld_CV_unfiltered(:,2),'g--')
 hold on
 plot(time_CV,raven_pos_x_frameWorld_CV,'b')
 
@@ -101,9 +101,9 @@ legend('CV unfiltered','CV filtered','ravenstate pos')
 saveas(fig3,'result_figures/End Effecor Position in X axis.png')
 saveas(fig3,'result_figures/End Effecor Position in X axis.fig')
 
-raven_pos_y_frameWorld_CV = raven_center_traj_frameWorld_CV(:,2);
+raven_pos_y_frameWorld_CV = raven_center_traj_frameWorld_CV(:,3);
 fig4 = figure();
-plot(time_CV_unfiltered,raven_center_traj_frameWorld_CV_unfiltered(:,2),'g--')
+plot(time_CV_unfiltered,raven_center_traj_frameWorld_CV_unfiltered(:,3),'g--')
 hold on
 plot(time_CV,raven_pos_y_frameWorld_CV,'b')
 plot(time_ravenstate,raven_center_traj_frameWorld_ravenstate(:,2),'r')
@@ -115,9 +115,9 @@ saveas(fig4,'result_figures/End Effecor Position in Y axis.png')
 saveas(fig4,'result_figures/End Effecor Position in Y axis.fig')
 
 
-raven_pos_z_frameWorld_CV = raven_center_traj_frameWorld_CV(:,3);
+raven_pos_z_frameWorld_CV = raven_center_traj_frameWorld_CV(:,4);
 fig5 = figure();
-plot(time_CV_unfiltered,raven_center_traj_frameWorld_CV_unfiltered(:,3),'g--')
+plot(time_CV_unfiltered,raven_center_traj_frameWorld_CV_unfiltered(:,4),'g--')
 hold on
 plot(time_CV,raven_pos_z_frameWorld_CV,'b')
 plot(time_ravenstate,raven_center_traj_frameWorld_ravenstate(:,3),'r')
@@ -132,9 +132,9 @@ saveas(fig5,'result_figures/End Effecor Position in Z axis.fig')
 size_CV = size(raven_center_traj_frameWorld_CV);
 for idx_CV = 1 :size_CV(1)
     [M, idx_ravenstate] = min(abs(time_ravenstate - time_CV(idx_CV)));
-    difference_x_frameWorld(idx_CV) = raven_center_traj_frameWorld_CV(idx_CV,1) - raven_center_traj_frameWorld_ravenstate(idx_ravenstate,1);
-    difference_y_frameWorld(idx_CV) = raven_center_traj_frameWorld_CV(idx_CV,2) - raven_center_traj_frameWorld_ravenstate(idx_ravenstate,2);
-    difference_z_frameWorld(idx_CV) = raven_center_traj_frameWorld_CV(idx_CV,3) - raven_center_traj_frameWorld_ravenstate(idx_ravenstate,3);
+    difference_x_frameWorld(idx_CV) = raven_center_traj_frameWorld_CV(idx_CV,2) - raven_center_traj_frameWorld_ravenstate(idx_ravenstate,1);
+    difference_y_frameWorld(idx_CV) = raven_center_traj_frameWorld_CV(idx_CV,3) - raven_center_traj_frameWorld_ravenstate(idx_ravenstate,2);
+    difference_z_frameWorld(idx_CV) = raven_center_traj_frameWorld_CV(idx_CV,4) - raven_center_traj_frameWorld_ravenstate(idx_ravenstate,3);
 end
 fig9 = figure();
 plot(time_CV, difference_x_frameWorld)
@@ -165,7 +165,7 @@ for idx = 1 : size_ravenstate(1) % rotation of end effector from raven state
 end
 
 for idx = 1 : size_CV(1) % rotation of end effector from CV
-    T_frameWorld_CV = reshape(raven_center_traj_frameWorld_CV(idx,4:19),[4,4]);
+    T_frameWorld_CV = reshape(raven_center_traj_frameWorld_CV(idx,5:20),[4,4]);
     eulZYX_frameWorld_CV(idx,:) = rotm2eul(T_frameWorld_CV(1:3,1:3));
 end
 

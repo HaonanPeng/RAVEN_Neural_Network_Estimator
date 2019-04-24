@@ -13,4 +13,5 @@ T_0_b = [0, 0, 1,300.71;
 
 T_b_0 = inverse_trans_matrix(T_0_b);
 T_w_b = inverse_trans_matrix(T_b_w);
+T_0_w = T_b_w * T_0_b
 %%

@@ -301,8 +301,8 @@ class raven_dnn_estimator:
         return None
     
     # Initialize the system, then the system will be ready to train DNN, and add new features will be available
-    def init_system(self):
-        self.set_percent()
+    def init_system(self, train_pct = 0.6, vali_pct = 0.2, test_pct = 0.2):
+        self.set_percent(train_pct = 0.6, vali_pct = 0.2, test_pct = 0.2)
         self.set_shuffle_seed()
         self.generate_data()
         self.normalize_data()
@@ -775,8 +775,8 @@ class raven_dnn_estimator:
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
                                      bias_initializer='zeros', 
-                                     kernel_regularizer=keras.regularizers.l1(regularize_rate), 
-                                     bias_regularizer=keras.regularizers.l1(regularize_rate), 
+                                     kernel_regularizer=keras.regularizers.l2(regularize_rate), 
+                                     bias_regularizer=keras.regularizers.l2(regularize_rate), 
                                      activity_regularizer=None, 
                                      kernel_constraint=None, 
                                      bias_constraint=None,
@@ -791,8 +791,8 @@ class raven_dnn_estimator:
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
                                      bias_initializer='zeros', 
-                                     kernel_regularizer=keras.regularizers.l1(regularize_rate), 
-                                     bias_regularizer=keras.regularizers.l1(regularize_rate), 
+                                     kernel_regularizer=keras.regularizers.l2(regularize_rate), 
+                                     bias_regularizer=keras.regularizers.l2(regularize_rate), 
                                      activity_regularizer=None, 
                                      kernel_constraint=None, 
                                      bias_constraint=None)
@@ -806,8 +806,8 @@ class raven_dnn_estimator:
                                  use_bias=True, 
                                  kernel_initializer=kernel_initializer, 
                                  bias_initializer='zeros', 
-                                 kernel_regularizer=keras.regularizers.l1(regularize_rate), 
-                                 bias_regularizer=keras.regularizers.l1(regularize_rate), 
+                                 kernel_regularizer=keras.regularizers.l2(regularize_rate), 
+                                 bias_regularizer=keras.regularizers.l2(regularize_rate), 
                                  activity_regularizer=None, 
                                  kernel_constraint=None, 
                                  bias_constraint=None )
@@ -829,7 +829,7 @@ class raven_dnn_estimator:
             print('.', end='')
         
         # Set early stop
-        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=100, 
+        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=600, 
                                       verbose=0, mode='min', baseline=None)
         
         EPOCHS = EPOCHS
@@ -946,19 +946,19 @@ class raven_dnn_estimator:
         
         return None
         
-    def dnn_make_prediction(self, data_input = None, output_truth = None):
+    def dnn_make_prediction(self, outside_input_signal = 0 , data_input = None, output_truth = None):
         
         print_dash_line()
         print("[RAVEN_DNN]: Prediction:")
         
-        if data_input == None:
+        if outside_input_signal == 0:
             print("[RAVEN_DNN]: No input provided, using raw data")
             if self.raven_data_signal == 0:
                 data_input = self.data_raw
             elif self.raven_data_signal == 1:
                 toggled_seed_ravenstate = self.seed_ravenstate_idx[range(0,self.seed_ravenstate_idx.size,20)]
                 data_input = self.data_raw[:,[toggled_seed_ravenstate]]
-        if output_truth == None:
+        if outside_input_signal == 0:
             print("[RAVEN_DNN]: No ground truth provided, using original label")
             output_truth = self.label_origin[:,[range(0,self.label_origin.shape[1],20)]]
         data_input = np.squeeze(data_input)
@@ -968,6 +968,12 @@ class raven_dnn_estimator:
         line_index = 0
         for line_raw in data_input:
             input_nor[line_index] = (data_input[line_index] - self.normalize_matrix_data[line_index][0]) / self.normalize_matrix_data[line_index][1]
+            line_index = line_index + 1
+            
+        output_nor = np.zeros(output_truth.shape)
+        line_index = 0
+        for line_raw in output_truth:
+            output_nor[line_index] = (output_truth[line_index] - self.normalize_matrix_label[line_index][0]) / self.normalize_matrix_label[line_index][1]
             line_index = line_index + 1
             
         # Model prediction
@@ -984,8 +990,6 @@ class raven_dnn_estimator:
             out_put[line_index] = line_out_put_nor * self.normalize_matrix_label[line_index][1] + self.normalize_matrix_label[line_index][0]
             line_index = line_index + 1
             
-
-        
         # Plot the result:
         line_index = 0
         for out_put_line in out_put:
@@ -999,6 +1003,9 @@ class raven_dnn_estimator:
                      label = 'Truth')
             plt.legend()
             line_index = line_index + 1
+            
+        loss, mae, mse = self.dnn_model.evaluate(input_nor.T, output_nor.T, verbose=0)
+        print("[RAVEN_DNN]: ***Test set Mean Abs Error for Prediction(if appliable)***:" + str(mae))
             
         print_dash_line()
         
