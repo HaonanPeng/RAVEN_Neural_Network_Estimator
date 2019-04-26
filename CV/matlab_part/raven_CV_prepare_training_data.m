@@ -49,6 +49,7 @@ for idx_CV = 1 :size_CV(1)
     difference_z_frameWorld_traj1(idx_CV) = raven_center_traj1_frameWorld_CV(idx_CV,4) - raven_center_traj1_frameWorld_ravenstate(idx_ravenstate,3);
 end
 
+
 % traj2 difference
 time_ravenstate_traj2 = raven_state_traj2(:,1)-raven_center_traj2_frameWorld_CV(1,1);
 time_CV_traj2 = raven_center_traj2_frameWorld_CV(:,1)-raven_center_traj2_frameWorld_CV(1,1)-time_decay;

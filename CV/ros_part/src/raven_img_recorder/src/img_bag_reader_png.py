@@ -60,7 +60,7 @@ class ImageCreator():
                             print e
                         timestr = "%.6f" %  msg.header.stamp.to_sec()
 
-                        image_name = img_folder_name + timestr + ".jpg"
+                        image_name = img_folder_name + timestr + ".png"
                         #image_name = timestr + ".jpg"
                         #cv2.imshow("img", cv_image)
                         #cv2.waitKey(30)

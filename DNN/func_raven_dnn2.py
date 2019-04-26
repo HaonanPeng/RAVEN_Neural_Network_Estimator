@@ -301,9 +301,9 @@ class raven_dnn_estimator:
         return None
     
     # Initialize the system, then the system will be ready to train DNN, and add new features will be available
-    def init_system(self, train_pct = 0.6, vali_pct = 0.2, test_pct = 0.2):
-        self.set_percent(train_pct = 0.6, vali_pct = 0.2, test_pct = 0.2)
-        self.set_shuffle_seed()
+    def init_system(self, train_pct = 0.6, vali_pct = 0.2, test_pct = 0.2 , continuous_signal = 0, seperations = 3):
+        self.set_percent(train_pct = train_pct, vali_pct = vali_pct, test_pct = test_pct)
+        self.set_shuffle_seed(continuous_signal = continuous_signal, seperations = seperations)
         self.generate_data()
         self.normalize_data()
         self.load_dnn_sets()
@@ -539,19 +539,57 @@ class raven_dnn_estimator:
         self.percent_test = test_pct
         return
     
-    def set_shuffle_seed(self):
-        size_total = np.size(self.label_origin[0])
-        shuffle_poor = np.arange(size_total)
-        np.random.shuffle(shuffle_poor)
-        
-        size_train = int(size_total * self.percent_train)
-        size_vali = int(size_total * self.percent_vali)
-        size_test = int(size_total * self.percent_test)
-        
-        self.shuffle_seed_train = shuffle_poor[0 : size_train]
-        self.shuffle_seed_vali = shuffle_poor[size_train : size_train+size_vali]
-        self.shuffle_seed_test = shuffle_poor[size_train+size_vali : size_train+size_vali+size_test]
-        
+    # Notice that the seperation shold not be larger than 5
+    def set_shuffle_seed(self, continuous_signal = 0, seperations = 3):
+        if continuous_signal == 0:
+            size_total = np.size(self.label_origin[0])
+            shuffle_poor = np.arange(size_total)
+            np.random.shuffle(shuffle_poor)
+            
+            size_train = int(size_total * self.percent_train)
+            size_vali = int(size_total * self.percent_vali)
+            size_test = int(size_total * self.percent_test)
+            
+            self.shuffle_seed_train = shuffle_poor[0 : size_train]
+            self.shuffle_seed_vali = shuffle_poor[size_train : size_train+size_vali]
+            self.shuffle_seed_test = shuffle_poor[size_train+size_vali : size_train+size_vali+size_test]
+            
+        if continuous_signal == 1:
+            size_total = np.size(self.label_origin[0])
+            shuffle_poor = np.arange(size_total)
+            
+            # validation
+            single_size_vali = int(1/seperations * self.percent_vali *size_total)         
+            vali_firstcall = 0
+            for iter in range(0,seperations):
+                start_idx_vali = int(size_total*(0.05 + (0.85-self.percent_vali/seperations)*np.random.rand()))
+                end_idx_vali = start_idx_vali + single_size_vali
+                if vali_firstcall == 0:
+                    vali_seed = np.array(range(start_idx_vali , end_idx_vali))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_vali , end_idx_vali)))
+                    vali_firstcall = 1
+                else:
+                    vali_seed = np.append(vali_seed , np.array(range(start_idx_vali , end_idx_vali)))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_vali , end_idx_vali)))
+                
+            # test set
+            single_size_test = int(1/seperations * self.percent_test *size_total)         
+            test_firstcall = 0
+            for iter in range(0,seperations):
+                start_idx_test = int(size_total*(0.05 + (0.85-self.percent_test/seperations)*np.random.rand()))
+                end_idx_test = start_idx_test + single_size_test
+                if test_firstcall == 0:
+                    test_seed = np.array(range(start_idx_test , end_idx_test))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_test , end_idx_test)))
+                    test_firstcall = 1
+                else:
+                    test_seed = np.append(test_seed , np.array(range(start_idx_test , end_idx_test)))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_test , end_idx_test)))
+                
+            self.shuffle_seed_train = shuffle_poor
+            self.shuffle_seed_vali = vali_seed
+            self.shuffle_seed_test = test_seed
+
         print("[RAVEN_DNN]: Shuffle seed has been set")
         return
     
@@ -829,7 +867,7 @@ class raven_dnn_estimator:
             print('.', end='')
         
         # Set early stop
-        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.001, patience=600, 
+        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.005, patience=200, 
                                       verbose=0, mode='min', baseline=None)
         
         EPOCHS = EPOCHS

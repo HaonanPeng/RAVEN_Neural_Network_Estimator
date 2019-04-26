@@ -7,6 +7,7 @@ Created on Tue Apr 16 17:15:55 2019
 
 import numpy as np
 import func_name_ravenstate as fnr
+import func_filters as ff
 
 # These functions are set because this part of code is very slow, for multiple running, this part needs to be run only once.
 # It will provide variables about ravenstate and index seeds
@@ -36,16 +37,26 @@ def load_ravenstate_step2(ravenstate , img_process_result):
     pos_d_frameWorld = T_0_w.dot(pos_d)
     ravenstate[7:10,:] = pos_d_frameWorld[0:3,:]
     
+    # filtering the difference of the three positions
+    window_size = 5
+    difference_x_filterd = ff.moving_average_filter(img_process_result[29],window_size)
+    difference_y_filterd = ff.moving_average_filter(img_process_result[30],window_size)
+    difference_z_filterd = ff.moving_average_filter(img_process_result[31],window_size)
+    img_process_result[29] = difference_x_filterd
+    img_process_result[30] = difference_y_filterd
+    img_process_result[31] = difference_z_filterd
+    
     time_data = ravenstate[0]
     time_label = img_process_result[0]
     
-    return ravenstate , time_data , time_label
+    return ravenstate , img_process_result , time_data , time_label
 
 def load_ravenstate_step3(time_data , time_label):
     seed_ravenstate_idx = np.zeros(np.size(time_label))
+    time_decay = 0.6
     idx = 0
     for label_time_value in time_label:
-        seed_ravenstate_idx[idx] = find_nearest(time_data , label_time_value)
+        seed_ravenstate_idx[idx] = find_nearest(time_data , label_time_value-time_decay)
         idx = idx + 1    
     return seed_ravenstate_idx
     
