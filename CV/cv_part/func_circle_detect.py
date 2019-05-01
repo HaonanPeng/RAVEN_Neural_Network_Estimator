@@ -9,6 +9,10 @@ import math
 import numpy as np
 import time
 import sys
+import func_color_threshold as fcth
+
+color_threshold = fcth.color_threshold()
+color_threshold.color_polyfit()
 
 class circle_temp_class:
     center = None
@@ -26,7 +30,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     pi = math.pi
     color_detect3_threshhold = 20
     sample_number = 36
-    circle_trust_threshold = 0.25
+    circle_trust_threshold = 0.2
     
     
     circle_temp = [circle_temp_class(), circle_temp_class(), circle_temp_class()]
@@ -68,17 +72,22 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
 
-    if (idx_cam == 0) or (idx_cam == 1):
+    if (idx_cam == 0) or (idx_cam == 1) or (idx_cam == 2):
         channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
         channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
-        channel_ball_1 = np.uint8((2*((red-blue)).clip(min=0,max=255)-channel_ball_2).clip(min=0,max=255))  # yellow
+        channel_ball_1 = np.uint8((3*((red-blue)).clip(min=0,max=255)-np.float32(channel_ball_2)).clip(min=0,max=255))  # yellow
         channel_ball_2 = np.uint8((3*(np.float32(channel_ball_2)-np.float32(channel_ball_1))).clip(min=0,max=255)) # red
-    elif (idx_cam == 2) or (idx_cam == 3):
+    elif idx_cam == 3:
         channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
         channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
-        channel_ball_1 = np.uint8((3*((red-blue)).clip(min=0,max=255)-channel_ball_2).clip(min=0,max=255))  # yellow
+        channel_ball_1 = np.uint8((10*(red-blue)-10*np.float32(channel_ball_2)).clip(min=0,max=255))  # yellow
         channel_ball_0 = np.uint8((3*(np.float32(channel_ball_0)-2*np.float32(channel_ball_1))).clip(min=0,max=255)) # green
     
+    if showplot == 1:
+        cv2.imshow("green channel",channel_ball_0)
+        cv2.imshow("yellow channel ",channel_ball_1)
+        cv2.imshow("red channel",channel_ball_2)
+
     blur_param = 7
     binary_thresh = 30
     (T,channel_ball_0) = cv2.threshold(cv2.GaussianBlur(channel_ball_0, (0,0), blur_param),binary_thresh,255,cv2.THRESH_BINARY)
@@ -285,6 +294,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         #cv2.imshow("show",gray)
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
+        print("circle_radius\n",circle_radius)
         
     # #[test]: currently the circle is not seperated successfully, so if one circle is failed, the whole image is failed
     # if (circle_radius[0]*circle_radius[1]*circle_radius[2]) == 0:
@@ -347,22 +357,41 @@ def auto_hough_circle(img, circle_numbers =1 , show_info=0 , circle_radius_min=0
     
 
 def color_detect (target_color, threshhold):
+    # color = np.array((0,0,0))
+    # b = int(target_color[0])
+    # g = int(target_color[1])
+    # r = int(target_color[2])
+
+    # # green 
+    # if ((b-r)>(-10)) & ((g-r)>15): 
+    #     color[0] = 1
+    # # yellow    
+    # if ((r-g)<30) & ((r-b)>20) & ((g-b)>30):
+    #     color[1] = 1
+    # # red     
+    # if ((r-g)>30) & ((r-b)>20) & (abs(b-g)<40):
+    #     color[2] = 1
+    
+    # return color
     color = np.array((0,0,0))
-    b = int(target_color[0])
-    g = int(target_color[1])
-    r = int(target_color[2])
-    
-    # green 
-    if ((b-r)>(-10)) & ((g-r)>15): 
+    color_ref = color_threshold.color_reference(target_color)
+    brightness = np.sum(target_color)/3
+
+    diff_ball_0 = abs(target_color[0]-color_ref[0,0])+abs(target_color[1]-color_ref[0,1])+abs(target_color[2]-color_ref[0,2])
+    diff_ball_1 = abs(target_color[0]-color_ref[1,0])+abs(target_color[1]-color_ref[1,1])+abs(target_color[2]-color_ref[1,2])
+    diff_ball_2 = abs(target_color[0]-color_ref[2,0])+abs(target_color[1]-color_ref[2,1])+abs(target_color[2]-color_ref[2,2])
+    diff_background = abs(target_color[0]-brightness)+abs(target_color[1]-brightness)+abs(target_color[2]-brightness)
+    diff_list = np.array([diff_ball_0,diff_ball_1,diff_ball_2,diff_background+20])
+    min_index = diff_list.argmin()
+    if min_index == 0:
         color[0] = 1
-    # yellow    
-    if ((g-r)<60) & ((r-b)>20) & ((g-b)>30):
+    if min_index == 1:
         color[1] = 1
-    # red     
-    if ((r-g)>40) & ((r-b)>10) & ((b-g)>10):
+    if min_index == 2:
         color[2] = 1
-    
     return color
+
+
 
 # boolize function, takes array as input, and output a same sized array with only 0 or 1    
 def boolize (arr_origin):

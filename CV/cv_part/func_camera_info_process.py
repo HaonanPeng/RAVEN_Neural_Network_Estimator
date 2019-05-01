@@ -15,7 +15,7 @@ info_R_cam = np.loadtxt(info_txt_path + 'info_R_cam.txt')
 
 circle_center_decay = 0.5
 
-showplot = 0
+showplot = 1
 
 
 class camera_info_definition():
@@ -39,7 +39,7 @@ class camera_info_definition():
     Cvector = None #vector of balls center to camera (System coordinate) in one frame
 
     circle_radius_threshold_decay = 0.75
-    circle_radius_expand = 10.0 # ball moves per second, the reference radius expand rate  
+    circle_radius_expand = 20.0 # ball moves per second, the reference radius expand rate  
     circle_radius_max = None  
     circle_radius_min = None
     
