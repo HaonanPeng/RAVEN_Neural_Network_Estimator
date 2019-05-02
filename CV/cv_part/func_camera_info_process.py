@@ -1,7 +1,9 @@
 import cv2
 import math
 import numpy as np
+from multiprocessing.pool import ThreadPool
 import func_circle_detect as f_cd
+
 
 
 info_txt_path = 'Camera_Info_txt/'
@@ -15,7 +17,7 @@ info_R_cam = np.loadtxt(info_txt_path + 'info_R_cam.txt')
 
 circle_center_decay = 0.5
 
-showplot = 1
+showplot = 0
 
 
 class camera_info_definition():
@@ -83,11 +85,29 @@ class camera_info:
     def ball_img_detect_locate(self, img_input_list, carve_sign = 0):   
         img_result_list = [None, None, None, None]
         self.listBall_effCam = [[] for _ in range(self.num_ball)] 
-        for idx_cam in range(self.num_cam):
-            self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect_single_ball (img_input_list[idx_cam], showplot, 
-                                                                                                                                                    self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max, 
-                                                                                                                                                    self.cam[idx_cam].ref_color, self.num_ball, idx_cam, 
-                                                                                                                                                    carve_sign, self.cam[idx_cam].img_ball_center_lastframe, self.cam[idx_cam].img_ball_radius)
+        # for idx_cam in range(self.num_cam):
+        #     self.cam[idx_cam].img_ball_center, self.cam[idx_cam].img_ball_radius, img_result_list[idx_cam] = f_cd.circle_center_detect_single_ball (img_input_list[idx_cam], showplot, 
+        #                                                                                                                                             self.cam[idx_cam].circle_radius_min, self.cam[idx_cam].circle_radius_max, 
+        #                                                                                                                                             self.cam[idx_cam].ref_color, self.num_ball, idx_cam, 
+        #                                                                                                                                             carve_sign, self.cam[idx_cam].img_ball_center_lastframe, self.cam[idx_cam].img_ball_radius)
+        #     self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
+        #     for idx_ball in range(self.num_ball):  
+        #         if np.sum(self.cam[idx_cam].img_ball_center[idx_ball,:])!=0:
+        #             self.listBall_effCam[idx_ball].extend([idx_cam]) 
+        # return img_result_list
+
+        #multi-thread version
+        pool = ThreadPool(processes=4)
+        async_result_0 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[0], showplot,self.cam[0].circle_radius_min, self.cam[0].circle_radius_max,self.cam[0].ref_color, self.num_ball, 0,carve_sign, self.cam[0].img_ball_center_lastframe, self.cam[0].img_ball_radius))
+        async_result_1 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[1], showplot,self.cam[1].circle_radius_min, self.cam[1].circle_radius_max,self.cam[1].ref_color, self.num_ball, 1,carve_sign, self.cam[1].img_ball_center_lastframe, self.cam[1].img_ball_radius))
+        async_result_2 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[2], showplot,self.cam[2].circle_radius_min, self.cam[2].circle_radius_max,self.cam[2].ref_color, self.num_ball, 2,carve_sign, self.cam[2].img_ball_center_lastframe, self.cam[2].img_ball_radius))
+        async_result_3 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[3], showplot,self.cam[3].circle_radius_min, self.cam[3].circle_radius_max,self.cam[3].ref_color, self.num_ball, 3,carve_sign, self.cam[3].img_ball_center_lastframe, self.cam[3].img_ball_radius))
+        self.cam[0].img_ball_center, self.cam[0].img_ball_radius, img_result_list[0] = async_result_0.get()
+        self.cam[1].img_ball_center, self.cam[1].img_ball_radius, img_result_list[1] = async_result_1.get()
+        self.cam[2].img_ball_center, self.cam[2].img_ball_radius, img_result_list[2] = async_result_2.get()
+        self.cam[3].img_ball_center, self.cam[3].img_ball_radius, img_result_list[3] = async_result_3.get()
+        
+        for idx_cam in range(self.num_cam):                                                                                             
             self.cam[idx_cam].Cvector = self.projection_vector(self.cam[idx_cam].R_cam,self.cam[idx_cam].img_ball_center,self.cam[idx_cam].resolution,self.cam[idx_cam].ps,self.cam[idx_cam].f)
             for idx_ball in range(self.num_ball):  
                 if np.sum(self.cam[idx_cam].img_ball_center[idx_ball,:])!=0:
