@@ -10,6 +10,7 @@ import numpy as np
 import time
 import sys
 import func_color_threshold as fcth
+from multiprocessing.pool import ThreadPool
 
 color_threshold = fcth.color_threshold()
 color_threshold.color_polyfit()
@@ -130,9 +131,20 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     hough_para = 10 
     hough_para_inc = 5
     hough_para_threshold = 0.01
-    circle_0 = auto_hough_circle(channel_ball_0 , circle_numbers, showplot , np.int_(circles_radius_min[0]), np.int_(circles_radius_max[0]), hough_para, hough_para_inc, hough_para_threshold)
-    circle_1 = auto_hough_circle(channel_ball_1 , circle_numbers, showplot , np.int_(circles_radius_min[1]), np.int_(circles_radius_max[1]), hough_para, hough_para_inc, hough_para_threshold)
-    circle_2 = auto_hough_circle(channel_ball_2 , circle_numbers, showplot , np.int_(circles_radius_min[2]), np.int_(circles_radius_max[2]), hough_para, hough_para_inc, hough_para_threshold)
+
+    # circle_0 = auto_hough_circle(channel_ball_0 , circle_numbers, showplot , np.int_(circles_radius_min[0]), np.int_(circles_radius_max[0]), hough_para, hough_para_inc, hough_para_threshold)
+    # circle_1 = auto_hough_circle(channel_ball_1 , circle_numbers, showplot , np.int_(circles_radius_min[1]), np.int_(circles_radius_max[1]), hough_para, hough_para_inc, hough_para_threshold)
+    # circle_2 = auto_hough_circle(channel_ball_2 , circle_numbers, showplot , np.int_(circles_radius_min[2]), np.int_(circles_radius_max[2]), hough_para, hough_para_inc, hough_para_threshold)
+
+    # multi-thread process version
+    pool = ThreadPool(processes=3)
+    async_result_0 = pool.apply_async(auto_hough_circle, (channel_ball_0 , circle_numbers, showplot , np.int_(circles_radius_min[0]), np.int_(circles_radius_max[0]), hough_para, hough_para_inc, hough_para_threshold)) # tuple of args for foo
+    async_result_1 = pool.apply_async(auto_hough_circle, (channel_ball_1 , circle_numbers, showplot , np.int_(circles_radius_min[1]), np.int_(circles_radius_max[1]), hough_para, hough_para_inc, hough_para_threshold)) # tuple of args for foo
+    async_result_2 = pool.apply_async(auto_hough_circle, (channel_ball_2 , circle_numbers, showplot , np.int_(circles_radius_min[2]), np.int_(circles_radius_max[2]), hough_para, hough_para_inc, hough_para_threshold)) # tuple of args for foo
+    circle_0 = async_result_0.get()
+    circle_1 = async_result_1.get()
+    circle_2 = async_result_2.get()
+
 
     ############### carve out image circle #############################
     if carve_sign == 1:
