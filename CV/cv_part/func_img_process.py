@@ -232,11 +232,15 @@ class img_processor:
         listBall_effCam_trust = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
             listBall_effCam_trust[idx_ball] = [x for x in self.camera_info.listBall_effCam[idx_ball] if x in self.camera_info.listBall_effCam_last[idx_ball]]
-            if len(self.camera_info.listBall_effCam[idx_ball])<=1 or len(listBall_effCam_trust[idx_ball])<=1:
-                    self.save_img()
-                    print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
-                    sys.exit(0)
-    
+            if len(self.camera_info.listBall_effCam[idx_ball])<=1:
+                self.save_img()
+                print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
+                sys.exit(0)
+            if len(listBall_effCam_trust[idx_ball])<=1:
+                self.save_img()
+                print('ball',idx_ball,'does not have enough effective trust frame (in current&last), system suspend\n')
+                sys.exit(0)
+            
         # generate the list of frame back to work (uneffective in last time, effective in current time)
         listBall_effCam_new = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
