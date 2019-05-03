@@ -14,6 +14,7 @@ from multiprocessing.pool import ThreadPool
 
 color_threshold = fcth.color_threshold()
 color_threshold.color_polyfit()
+saturation_enhance = 1
 
 class circle_temp_class:
     center = None
@@ -123,8 +124,14 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
     
-    # denoise for color image
-    img = cv2.GaussianBlur(img, (0,0), 4)
+    # denoise for color image and enhance the saturation
+    img = cv2.GaussianBlur(img, (0,0), 8)
+    if saturation_enhance == 1:          
+        saturation_factor = 2
+        hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
+        hsv_new = np.uint8(cv2.pow(hsv/255,1/saturation_factor)*255)
+        hsv[:,:,1] = hsv_new[:,:,1]
+        img = cv2.cvtColor(hsv, cv2.COLOR_HSV2BGR)
     
     circles_info = np.zeros([1,3,3]) # Initialize circles
     circle_numbers = 1
@@ -195,8 +202,8 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
                 
             #sample points to detect color
             for k in range(0, sample_number):
-                pointX = int(round(circle_temp[counter].center[0] + 0.8*circle_temp[counter].radius * np.sin (2*k*pi/sample_number)))
-                pointY = int(round(circle_temp[counter].center[1] + 0.8*circle_temp[counter].radius * np.cos (2*k*pi/sample_number)))
+                pointX = int(round(circle_temp[counter].center[0] + 0.7*circle_temp[counter].radius * np.sin (2*k*pi/sample_number)))
+                pointY = int(round(circle_temp[counter].center[1] + 0.7*circle_temp[counter].radius * np.cos (2*k*pi/sample_number)))
                 
                 try:
                     pointColor = img[pointY, pointX]  # [IMPORTANT] Notice that in the index, x and y are reversed
@@ -216,7 +223,14 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
                 draw_color = (float(draw_color[0]),float(draw_color[1]),float(draw_color[2]))
                 
                 circle_temp[counter].color_vec = circle_temp[counter].color_vec + detected_color
-                cv2.circle(img_origin, (pointX, pointY), 1, draw_color, 1, 1, 0)
+                if detected_color[0] == 1:               
+                    cv2.circle(img_origin, (pointX, pointY), 1, [0,255,0], 1, 1, 0)
+                elif detected_color[1] == 1:
+                    cv2.circle(img_origin, (pointX, pointY), 1, [0,255,255], 1, 1, 0)
+                elif detected_color[2] == 1:
+                    cv2.circle(img_origin, (pointX, pointY), 1, [0,0,255], 1, 1, 0)
+                else:
+                    cv2.circle(img_origin, (pointX, pointY), 1, [0,0,0], 1, 1, 0)
                 
             counter = counter + 1
     
@@ -393,6 +407,12 @@ def color_detect (target_color, threshhold):
     diff_ball_1 = abs(target_color[0]-color_ref[1,0])+abs(target_color[1]-color_ref[1,1])+abs(target_color[2]-color_ref[1,2])
     diff_ball_2 = abs(target_color[0]-color_ref[2,0])+abs(target_color[1]-color_ref[2,1])+abs(target_color[2]-color_ref[2,2])
     diff_background = abs(target_color[0]-brightness)+abs(target_color[1]-brightness)+abs(target_color[2]-brightness)
+
+    # diff_ball_0 = np.square(target_color[0]-color_ref[0,0])+np.square(target_color[1]-color_ref[0,1])+np.square(target_color[2]-color_ref[0,2])
+    # diff_ball_1 = np.square(target_color[0]-color_ref[1,0])+np.square(target_color[1]-color_ref[1,1])+np.square(target_color[2]-color_ref[1,2])
+    # diff_ball_2 = np.square(target_color[0]-color_ref[2,0])+np.square(target_color[1]-color_ref[2,1])+np.square(target_color[2]-color_ref[2,2])
+    # diff_background = np.square(target_color[0]-brightness)+np.square(target_color[1]-brightness)+np.square(target_color[2]-brightness)
+
     diff_list = np.array([diff_ball_0,diff_ball_1,diff_ball_2,diff_background+20])
     min_index = diff_list.argmin()
     if min_index == 0:
