@@ -401,12 +401,15 @@ def color_detect (target_color, threshhold):
     # return color
     color = np.array((0,0,0))
     color_ref = color_threshold.color_reference(target_color)
-    brightness = np.sum(target_color)/3
+    brightness = np.sum(target_color)
+    
+    if brightness<45 or brightness>700:
+        return color
 
     diff_ball_0 = abs(target_color[0]-color_ref[0,0])+abs(target_color[1]-color_ref[0,1])+abs(target_color[2]-color_ref[0,2])
     diff_ball_1 = abs(target_color[0]-color_ref[1,0])+abs(target_color[1]-color_ref[1,1])+abs(target_color[2]-color_ref[1,2])
     diff_ball_2 = abs(target_color[0]-color_ref[2,0])+abs(target_color[1]-color_ref[2,1])+abs(target_color[2]-color_ref[2,2])
-    diff_background = abs(target_color[0]-brightness)+abs(target_color[1]-brightness)+abs(target_color[2]-brightness)
+    diff_background = abs(target_color[0]-brightness/3)+abs(target_color[1]-brightness/3)+abs(target_color[2]-brightness/3)
 
     # diff_ball_0 = np.square(target_color[0]-color_ref[0,0])+np.square(target_color[1]-color_ref[0,1])+np.square(target_color[2]-color_ref[0,2])
     # diff_ball_1 = np.square(target_color[0]-color_ref[1,0])+np.square(target_color[1]-color_ref[1,1])+np.square(target_color[2]-color_ref[1,2])
