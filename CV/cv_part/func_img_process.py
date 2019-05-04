@@ -77,7 +77,7 @@ class img_processor:
     # index seed, will be used in the filter
     idx_seed = None
     
-    time_difference = 1.18 # This is the difference between the two computers, if the 4 webcams are connected to one computer, this should be 0
+    time_difference = -3.2 # This is the difference between the two computers, if the 4 webcams are connected to one computer, this should be 0
 #    initial_time = 0.0
 
     # to save the max/min radius
@@ -232,15 +232,11 @@ class img_processor:
         listBall_effCam_trust = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
             listBall_effCam_trust[idx_ball] = [x for x in self.camera_info.listBall_effCam[idx_ball] if x in self.camera_info.listBall_effCam_last[idx_ball]]
-            if len(self.camera_info.listBall_effCam[idx_ball])<=1:
-                self.save_img()
-                print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
-                sys.exit(0)
-            if len(listBall_effCam_trust[idx_ball])<=1:
-                self.save_img()
-                print('ball',idx_ball,'does not have enough effective trust frame (in current&last), system suspend\n')
-                sys.exit(0)
-            
+            if len(self.camera_info.listBall_effCam[idx_ball])<=1 or len(listBall_effCam_trust[idx_ball])<=1:
+                    self.save_img()
+                    print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
+                    sys.exit(0)
+    
         # generate the list of frame back to work (uneffective in last time, effective in current time)
         listBall_effCam_new = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
@@ -328,13 +324,13 @@ class img_processor:
         cv2.imwrite (cam1_name, self.img_cur[1])
         cv2.imwrite (cam1_name_n, self.img_cur[1])
         # Save cam2
-        cam2_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam2_time_" + str(self.time_str_cur[2]) + "_index_" + str(self.idx_cur[2]) + ".jpg"
-        cam2_name_n = self.selected_frames_path_cam2 + "frame_" + str(self.frame_counter) + "_cam2_time_" + str(self.time_str_cur[2]) + "_index_" + str(self.idx_cur[2]) + ".jpg"
+        cam2_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam2_time_" + str(self.time_str_cur[2] + self.time_difference) + "_index_" + str(self.idx_cur[2]) + ".jpg"
+        cam2_name_n = self.selected_frames_path_cam2 + "frame_" + str(self.frame_counter) + "_cam2_time_" + str(self.time_str_cur[2] + self.time_difference) + "_index_" + str(self.idx_cur[2]) + ".jpg"
         cv2.imwrite (cam2_name, self.img_cur[2])
         cv2.imwrite (cam2_name_n, self.img_cur[2])
         # Save cam3
-        cam3_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3]) + "_index_" + str(self.idx_cur[3]) + ".jpg"
-        cam3_name_n = self.selected_frames_path_cam3 + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3]) + "_index_" + str(self.idx_cur[3]) + ".jpg"
+        cam3_name = self.selected_frames_path + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3] + self.time_difference) + "_index_" + str(self.idx_cur[3]) + ".jpg"
+        cam3_name_n = self.selected_frames_path_cam3 + "frame_" + str(self.frame_counter) + "_cam3_time_" + str(self.time_str_cur[3] + self.time_difference) + "_index_" + str(self.idx_cur[3]) + ".jpg"
         cv2.imwrite (cam3_name, self.img_cur[3])
         cv2.imwrite (cam3_name_n, self.img_cur[3])
         
