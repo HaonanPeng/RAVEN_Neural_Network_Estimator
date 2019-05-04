@@ -225,6 +225,11 @@ class img_processor:
                     self.camera_info.listBall_effCam[idx_ball].remove(idx_cam)
 
         print('effective list (without back-to-work):',self.camera_info.listBall_effCam)
+        for idx_ball in range(self.camera_info.num_ball):
+            if len(self.camera_info.listBall_effCam[idx_ball])<=1:
+                self.save_img()
+                print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
+                sys.exit(0)
 
         # generate the list of trusted frame  (effective in both last time and current time)
         if index_iteration == 0:
@@ -232,10 +237,6 @@ class img_processor:
         listBall_effCam_trust = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
             listBall_effCam_trust[idx_ball] = [x for x in self.camera_info.listBall_effCam[idx_ball] if x in self.camera_info.listBall_effCam_last[idx_ball]]
-            if len(self.camera_info.listBall_effCam[idx_ball])<=1:
-                self.save_img()
-                print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
-                sys.exit(0)
             if len(listBall_effCam_trust[idx_ball])<=1:
                 self.save_img()
                 print('ball',idx_ball,'does not have enough effective trust frame (in current&last), system suspend\n')
