@@ -125,7 +125,7 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.destroyAllWindows() 
     
     # denoise for color image and enhance the saturation
-    img = cv2.GaussianBlur(img, (0,0), 8)
+    img = cv2.GaussianBlur(img, (0,0), 3)
     if saturation_enhance == 1:          
         saturation_factor = 2
         hsv = cv2.cvtColor(img, cv2.COLOR_BGR2HSV)
@@ -403,20 +403,21 @@ def color_detect (target_color, threshhold):
     color_ref = color_threshold.color_reference(target_color)
     brightness = np.sum(target_color)
     
-    if brightness<45 or brightness>700:
+#    if brightness<45 or brightness>700:
+    if ((np.std(target_color)*3-12)/(brightness + 20)) < 0.25:
         return color
 
-    diff_ball_0 = abs(target_color[0]-color_ref[0,0])+abs(target_color[1]-color_ref[0,1])+abs(target_color[2]-color_ref[0,2])
-    diff_ball_1 = abs(target_color[0]-color_ref[1,0])+abs(target_color[1]-color_ref[1,1])+abs(target_color[2]-color_ref[1,2])
-    diff_ball_2 = abs(target_color[0]-color_ref[2,0])+abs(target_color[1]-color_ref[2,1])+abs(target_color[2]-color_ref[2,2])
-    diff_background = abs(target_color[0]-brightness/3)+abs(target_color[1]-brightness/3)+abs(target_color[2]-brightness/3)
+    diff_ball_0 = np.square(target_color[0]-color_ref[0,0])+np.square(target_color[1]-color_ref[0,1])+np.square(target_color[2]-color_ref[0,2])
+    diff_ball_1 = np.square(target_color[0]-color_ref[1,0])+np.square(target_color[1]-color_ref[1,1])+np.square(target_color[2]-color_ref[1,2])
+    diff_ball_2 = np.square(target_color[0]-color_ref[2,0])+np.square(target_color[1]-color_ref[2,1])+np.square(target_color[2]-color_ref[2,2])
+    diff_background = np.square(target_color[0]-brightness/3)+np.square(target_color[1]-brightness/3)+np.square(target_color[2]-brightness/3)
 
     # diff_ball_0 = np.square(target_color[0]-color_ref[0,0])+np.square(target_color[1]-color_ref[0,1])+np.square(target_color[2]-color_ref[0,2])
     # diff_ball_1 = np.square(target_color[0]-color_ref[1,0])+np.square(target_color[1]-color_ref[1,1])+np.square(target_color[2]-color_ref[1,2])
     # diff_ball_2 = np.square(target_color[0]-color_ref[2,0])+np.square(target_color[1]-color_ref[2,1])+np.square(target_color[2]-color_ref[2,2])
     # diff_background = np.square(target_color[0]-brightness)+np.square(target_color[1]-brightness)+np.square(target_color[2]-brightness)
 
-    diff_list = np.array([diff_ball_0,diff_ball_1,diff_ball_2,diff_background+20])
+    diff_list = np.array([diff_ball_0,diff_ball_1,diff_ball_2,diff_background+0])
     min_index = diff_list.argmin()
     if min_index == 0:
         color[0] = 1
