@@ -74,16 +74,11 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
 
-    if (idx_cam == 0) or (idx_cam == 1) or (idx_cam == 2):
-        channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
-        channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
-        channel_ball_1 = np.uint8((3*((red-blue)).clip(min=0,max=255)-np.float32(channel_ball_2)).clip(min=0,max=255))  # yellow
-        channel_ball_2 = np.uint8((3*(np.float32(channel_ball_2)-np.float32(channel_ball_1))).clip(min=0,max=255)) # red
-    elif idx_cam == 3:
-        channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
-        channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
-        channel_ball_1 = np.uint8((10*(red-blue)-10*np.float32(channel_ball_2)).clip(min=0,max=255))  # yellow
-        channel_ball_0 = np.uint8((3*(np.float32(channel_ball_0)-2*np.float32(channel_ball_1))).clip(min=0,max=255)) # green
+    channel_ball_2 = np.uint8((3*(red-green)).clip(min=0,max=255)) # red
+    channel_ball_0 = np.uint8((3*(green-red)).clip(min=0,max=255)) # green
+    channel_ball_1 = np.uint8((10*(red-blue)-7*np.float32(channel_ball_2)).clip(min=0,max=255)) # yellow
+    channel_ball_0 = np.uint8((3*(np.float32(channel_ball_0)-2*np.float32(channel_ball_1))).clip(min=0,max=255)) # green
+    channel_ball_2 = np.uint8((3*(np.float32(channel_ball_2)-3*np.float32(channel_ball_1))).clip(min=0,max=255)) # red
     
     if showplot == 1:
         cv2.imshow("green channel",channel_ball_0)
@@ -238,11 +233,23 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
     end_signal = 0    
     counter2 = 0
     filter1 = np.array([1, 1, 1])
+    
     circle_color_samples = np.array([circle_temp[0].color_vec,circle_temp[1].color_vec,circle_temp[2].color_vec])
+    
+     # If the detected colored sample points is less than the trust threshold, the circle will be muted
+#    color_trust_threshold = circle_trust_threshold*sample_number
+#    circle_temp[0].color_vec = circle_temp[0].color_vec - color_trust_threshold
+#    circle_temp[1].color_vec = circle_temp[1].color_vec - color_trust_threshold
+#    circle_temp[2].color_vec = circle_temp[2].color_vec - color_trust_threshold
+    
     booled_color_vec = [np.array([0,0,0]), np.array([0,0,0]), np.array([0,0,0])]
     booled_color_vec[0] = boolize(circle_temp[0].color_vec)
     booled_color_vec[1] = boolize(circle_temp[1].color_vec)
     booled_color_vec[2] = boolize(circle_temp[2].color_vec)
+    
+    circle_temp[0].color_vec = circle_color_samples[0]
+    circle_temp[1].color_vec = circle_color_samples[1]
+    circle_temp[2].color_vec = circle_color_samples[2]
     
     circle_centers = np.zeros((3,2))
     circle_radius = np.zeros(3)
@@ -256,6 +263,8 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
         cv2.waitKey(0)
         cv2.destroyAllWindows() 
     
+    
+        
     while end_signal != 1:
         if sum(filter1 * booled_color_vec[counter2 % 3]) != 1:
             counter2 = counter2 + 1
@@ -264,21 +273,66 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
                 break
             continue
         else:
+#            print('circle_color_samples')
+#            print(circle_color_samples)
+#            print('color vec')
+#            print(circle_temp[0].color_vec)
+#            print(circle_temp[1].color_vec)
+#            print(circle_temp[2].color_vec)
+#            print('booled color vec')
+#            print(booled_color_vec[0])
+#            print(booled_color_vec[1])
+#            print(booled_color_vec[2])
             if (filter1 *booled_color_vec[counter2 % 3])[0] == 1: #The circle is blue
-                circle_centers[0] = circle_temp[counter2 % 3].center
-                circle_radius[0] = circle_temp[counter2 % 3].radius
-                circle_color_counter[0] =  circle_color_samples[counter2 % 3]
-                filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+                if ((filter1 *booled_color_vec[(counter2+1) % 3])[0] == 1) and (sum(filter1 * booled_color_vec[(counter2+1) % 3]) == 1):
+                    if sum(filter1 * circle_temp[counter2 % 3].color_vec) < sum(filter1 * circle_temp[(counter2+1) % 3].color_vec):
+                        booled_color_vec[counter2 % 3][0] = 0
+                    else:
+                        booled_color_vec[(counter2+1) % 3][0] = 0
+                elif ((filter1 *booled_color_vec[(counter2+2) % 3])[0] == 1) and (sum(filter1 * booled_color_vec[(counter2+2) % 3]) == 1):
+                    if sum(filter1 * circle_temp[counter2 % 3].color_vec) < sum(filter1 * circle_temp[(counter2+2) % 3].color_vec):
+                        booled_color_vec[counter2 % 3][0] = 0
+                    else:
+                        booled_color_vec[(counter2+2) % 3][0] = 0
+                else:
+                    circle_centers[0] = circle_temp[counter2 % 3].center
+                    circle_radius[0] = circle_temp[counter2 % 3].radius
+                    circle_color_counter[0] =  circle_color_samples[counter2 % 3]
+                    filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+                
             elif (filter1 *booled_color_vec[counter2 % 3])[1] == 1:
-                circle_centers[1] = circle_temp[counter2 % 3].center
-                circle_radius[1] = circle_temp[counter2 % 3].radius
-                circle_color_counter[1] =  circle_color_samples[counter2 % 3]
-                filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+                if ((filter1 *booled_color_vec[(counter2+1) % 3])[1] == 1) and (sum(filter1 * booled_color_vec[(counter2+1) % 3]) == 1):
+                    if sum(filter1 * circle_temp[counter2 % 3].color_vec) < sum(filter1 * circle_temp[(counter2+1) % 3].color_vec):
+                        booled_color_vec[counter2 % 3][1] = 0
+                    else:
+                        booled_color_vec[(counter2+1) % 3][1] = 0
+                elif ((filter1 *booled_color_vec[(counter2+2) % 3])[0] == 1) and (sum(filter1 * booled_color_vec[(counter2+2) % 3]) == 1):
+                    if sum(filter1 * circle_temp[counter2 % 3].color_vec) < sum(filter1 * circle_temp[(counter2+2) % 3].color_vec):
+                        booled_color_vec[counter2 % 3][1] = 0
+                    else:
+                        booled_color_vec[(counter2+2) % 3][1] = 0
+                else:
+                    circle_centers[1] = circle_temp[counter2 % 3].center
+                    circle_radius[1] = circle_temp[counter2 % 3].radius
+                    circle_color_counter[1] =  circle_color_samples[counter2 % 3]
+                    filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+                    
             elif (filter1 *booled_color_vec[counter2 % 3])[2] == 1:
-                circle_centers[2] = circle_temp[counter2 % 3].center
-                circle_radius[2] = circle_temp[counter2 % 3].radius
-                circle_color_counter[2] =  circle_color_samples[counter2 % 3]
-                filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
+                if ((filter1 *booled_color_vec[(counter2+1) % 3])[2] == 1) and (sum(filter1 * booled_color_vec[(counter2+1) % 3]) == 1):
+                    if sum(filter1 * circle_temp[counter2 % 3].color_vec) < sum(filter1 * circle_temp[(counter2+1) % 3].color_vec):
+                        booled_color_vec[counter2 % 3][2] = 0
+                    else:
+                        booled_color_vec[(counter2+1) % 3][2] = 0
+                elif ((filter1 *booled_color_vec[(counter2+2) % 3])[2] == 1) and (sum(filter1 * booled_color_vec[(counter2+2) % 3]) == 1):
+                    if sum(filter1 * circle_temp[counter2 % 3].color_vec) < sum(filter1 * circle_temp[(counter2+2) % 3].color_vec):
+                        booled_color_vec[counter2 % 3][2] = 0
+                    else:
+                        booled_color_vec[(counter2+2) % 3][2] = 0
+                else:
+                    circle_centers[2] = circle_temp[counter2 % 3].center
+                    circle_radius[2] = circle_temp[counter2 % 3].radius
+                    circle_color_counter[2] =  circle_color_samples[counter2 % 3]
+                    filter1 = filter1 - filter1 * booled_color_vec[counter2 % 3]
             else:
                 print("[ERROR] color assign failed")
         if np.sum(filter1) == 0:
@@ -433,7 +487,7 @@ def color_detect (target_color, threshhold):
 def boolize (arr_origin):
     arr = arr_origin
     for i in range(0, len(arr)):
-        if arr[i] == 0:
+        if arr[i] <= 0:
             arr[i] = 0
         else:
             arr[i] = 1
