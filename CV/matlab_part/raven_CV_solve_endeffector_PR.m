@@ -1,8 +1,8 @@
 close all, clear all, clc
 
 %% solve filtered
-txtfile_name = 'data_files/img_process_result_traj11_filtered.txt';
-resultfile_name = 'data_files/img_process_result_traj11_raven_center_filtered.txt';
+txtfile_name = 'data_files/img_process_result_traj13_filtered.txt';
+resultfile_name = 'data_files/img_process_result_traj13_raven_center_filtered.txt';
 result_traj = importdata(txtfile_name);
 
 %% raven frames defination, for left arm
@@ -35,8 +35,8 @@ dlmwrite(resultfile_name,raven_center,'precision',16,'delimiter',' ')
 
 %% solve unfiltered
 
-txtfile_name = 'data_files/img_process_result_traj11.txt';
-resultfile_name = 'data_files/img_process_result_traj11_raven_center.txt';
+txtfile_name = 'data_files/img_process_result_traj13.txt';
+resultfile_name = 'data_files/img_process_result_traj13_raven_center.txt';
 result_traj = importdata(txtfile_name);
 
 %% raven frames defination, for left arm

@@ -17,7 +17,7 @@ info_R_cam = np.loadtxt(info_txt_path + 'info_R_cam.txt')
 
 circle_center_decay = 0.5
 
-showplot = 0
+#showplot = 0
 
 
 class camera_info_definition():
@@ -56,6 +56,7 @@ class camera_info:
     num_ball = 3  #ball number
     listBall_effCam = [[] for _ in range(num_ball)] # list of effective cam_frame of each ball 
     listBall_effCam_last = [[] for _ in range(num_ball)]
+    show_plot = 0
     
     cam = [camera_info_definition(),camera_info_definition(),camera_info_definition(),camera_info_definition()]
     
@@ -98,10 +99,10 @@ class camera_info:
 
         #multi-thread version
         pool = ThreadPool(processes=4)
-        async_result_0 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[0], showplot,self.cam[0].circle_radius_min, self.cam[0].circle_radius_max,self.cam[0].ref_color, self.num_ball, 0,carve_sign, self.cam[0].img_ball_center_lastframe, self.cam[0].img_ball_radius))
-        async_result_1 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[1], showplot,self.cam[1].circle_radius_min, self.cam[1].circle_radius_max,self.cam[1].ref_color, self.num_ball, 1,carve_sign, self.cam[1].img_ball_center_lastframe, self.cam[1].img_ball_radius))
-        async_result_2 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[2], showplot,self.cam[2].circle_radius_min, self.cam[2].circle_radius_max,self.cam[2].ref_color, self.num_ball, 2,carve_sign, self.cam[2].img_ball_center_lastframe, self.cam[2].img_ball_radius))
-        async_result_3 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[3], showplot,self.cam[3].circle_radius_min, self.cam[3].circle_radius_max,self.cam[3].ref_color, self.num_ball, 3,carve_sign, self.cam[3].img_ball_center_lastframe, self.cam[3].img_ball_radius))
+        async_result_0 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[0], self.show_plot,self.cam[0].circle_radius_min, self.cam[0].circle_radius_max,self.cam[0].ref_color, self.num_ball, 0,carve_sign, self.cam[0].img_ball_center_lastframe, self.cam[0].img_ball_radius))
+        async_result_1 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[1], self.show_plot,self.cam[1].circle_radius_min, self.cam[1].circle_radius_max,self.cam[1].ref_color, self.num_ball, 1,carve_sign, self.cam[1].img_ball_center_lastframe, self.cam[1].img_ball_radius))
+        async_result_2 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[2], self.show_plot,self.cam[2].circle_radius_min, self.cam[2].circle_radius_max,self.cam[2].ref_color, self.num_ball, 2,carve_sign, self.cam[2].img_ball_center_lastframe, self.cam[2].img_ball_radius))
+        async_result_3 = pool.apply_async(f_cd.circle_center_detect_single_ball, (img_input_list[3], self.show_plot,self.cam[3].circle_radius_min, self.cam[3].circle_radius_max,self.cam[3].ref_color, self.num_ball, 3,carve_sign, self.cam[3].img_ball_center_lastframe, self.cam[3].img_ball_radius))
         self.cam[0].img_ball_center, self.cam[0].img_ball_radius, img_result_list[0] = async_result_0.get()
         self.cam[1].img_ball_center, self.cam[1].img_ball_radius, img_result_list[1] = async_result_1.get()
         self.cam[2].img_ball_center, self.cam[2].img_ball_radius, img_result_list[2] = async_result_2.get()
@@ -138,6 +139,8 @@ class camera_info:
     
     
     def center_calculator(self,idx_ball,list_selected_cam):
+#        print(len(list_selected_cam))
+        _=1
         if len(list_selected_cam) == 2:
             center = self.point_between_2lines(self.cam[list_selected_cam[0]].P_cam,self.cam[list_selected_cam[1]].P_cam,self.cam[list_selected_cam[0]].Cvector[idx_ball],self.cam[list_selected_cam[1]].Cvector[idx_ball])
         
@@ -150,11 +153,17 @@ class camera_info:
         elif len(list_selected_cam) == 4:   
             center01 = self.point_between_2lines(self.cam[list_selected_cam[0]].P_cam,self.cam[list_selected_cam[1]].P_cam,self.cam[list_selected_cam[0]].Cvector[idx_ball],self.cam[list_selected_cam[1]].Cvector[idx_ball])
             center23 = self.point_between_2lines(self.cam[list_selected_cam[3]].P_cam,self.cam[list_selected_cam[2]].P_cam,self.cam[list_selected_cam[3]].Cvector[idx_ball],self.cam[list_selected_cam[2]].Cvector[idx_ball])
-            center = (center01+center23)/2    
+            center = (center01+center23)/2
+        else:
+            center = None
             
         # could be more photo added ....    
              
         return center
+    
+    def set_show_plot(self, signal):
+        self.show_plot = signal
+        return None
 
 
 

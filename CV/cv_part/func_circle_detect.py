@@ -16,6 +16,8 @@ color_threshold = fcth.color_threshold()
 color_threshold.color_polyfit()
 saturation_enhance = 1
 
+sample_radius = 0.8
+
 class circle_temp_class:
     center = None
     radius = None
@@ -202,8 +204,8 @@ def circle_center_detect_single_ball (img, showplot, circles_radius_min, circles
 
             #sample points to detect color
             for k in range(0, sample_number):
-                pointX = int(round(circle_temp[counter].center[0] + 0.7*circle_temp[counter].radius * np.sin (2*k*pi/sample_number)))
-                pointY = int(round(circle_temp[counter].center[1] + 0.7*circle_temp[counter].radius * np.cos (2*k*pi/sample_number)))
+                pointX = int(round(circle_temp[counter].center[0] + sample_radius*circle_temp[counter].radius * np.sin (2*k*pi/sample_number)))
+                pointY = int(round(circle_temp[counter].center[1] + sample_radius*circle_temp[counter].radius * np.cos (2*k*pi/sample_number)))
                 
                 try:
                     pointColor = img[pointY, pointX]  # [IMPORTANT] Notice that in the index, x and y are reversed

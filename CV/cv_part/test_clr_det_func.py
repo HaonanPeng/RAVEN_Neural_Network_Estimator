@@ -15,7 +15,7 @@ import sys
 
 #img_name = "1547272570.814634.jpg"
 #img_name = "2_1.jpg"
-img_name = "test1.jpg"
+img_name = "test.jpg"
 img = cv2.imread(img_name)
 
 tic = time.time()

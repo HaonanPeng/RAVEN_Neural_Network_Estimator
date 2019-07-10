@@ -414,7 +414,7 @@ class raven_dnn_estimator:
                 if arg ==[None]:
                     new_line = np.gradient(self.data_raw[operation_object], 0.001 ,edge_order = 2)
                 elif self.raven_data_signal == 1:
-                    new_line = ff.mov_avr_derivative(self.data_raw[operation_object], 0.001 , window_size = 501)
+                    new_line = ff.mov_avr_derivative(self.data_raw[operation_object], 0.001 , window_size = 101)
                 
             elif operation_type == 2: # power
                 origin_object = operation_object
@@ -597,7 +597,8 @@ class raven_dnn_estimator:
         mean = np.mean(data_line)
         std = np.std(data_line)     
         if std == 0:
-            print("[RAVEN_DNN]Warning: std is 0")
+            std = 0.001
+#            print("[RAVEN_DNN]Warning: std is 0, setting to a small value")
         data_line_nor = (data_line - mean)/ std
         
         return data_line_nor, mean, std
@@ -805,17 +806,17 @@ class raven_dnn_estimator:
         kernel_initializer = keras.initializers.glorot_normal(seed = 1)
         
         # Define leaky RELU
-        
+#        leaky_RELU = keras.activations.relu(x, alpha=0.1, max_value=None, threshold=0.0)
         # Input layer
         size_input_layer = layers_matrix[0][1]
         input_layer = layers.Dense(size_input_layer, 
-                                     activation='relu', 
+                                     activation='elu', 
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
                                      bias_initializer='zeros', 
-                                     kernel_regularizer=keras.regularizers.l2(regularize_rate), 
-                                     bias_regularizer=keras.regularizers.l2(regularize_rate), 
-                                     activity_regularizer=None, 
+                                     kernel_regularizer=keras.regularizers.l1(regularize_rate), 
+                                     bias_regularizer=keras.regularizers.l1(regularize_rate), 
+                                     activity_regularizer=keras.regularizers.l1(regularize_rate), 
                                      kernel_constraint=None, 
                                      bias_constraint=None,
                                      input_shape=[self.data_train.shape[0]])
@@ -823,39 +824,68 @@ class raven_dnn_estimator:
         
         # Hidden Layer
         for index, size in layers_matrix:
+            
+            # [optional] adding batch nomalization
+            nor_layer = keras.layers.BatchNormalization(axis=-1, 
+                                                        momentum=0.99, epsilon=0.001, 
+                                                        center=True, scale=True, 
+                                                        beta_initializer='zeros', gamma_initializer='ones', 
+                                                        moving_mean_initializer='zeros', 
+                                                        moving_variance_initializer='ones', 
+                                                        beta_regularizer=None, 
+                                                        gamma_regularizer=None, 
+                                                        beta_constraint=None, 
+                                                        gamma_constraint=None)
+            self.dnn_model.add(nor_layer)
+            
             kernel_initializer = keras.initializers.glorot_normal(seed = index + 2)
             new_layer = layers.Dense(size, 
-                                     activation='relu', 
+                                     activation='elu', 
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
                                      bias_initializer='zeros', 
-                                     kernel_regularizer=keras.regularizers.l2(regularize_rate), 
-                                     bias_regularizer=keras.regularizers.l2(regularize_rate), 
-                                     activity_regularizer=None, 
+                                     kernel_regularizer=keras.regularizers.l1(regularize_rate), 
+                                     bias_regularizer=keras.regularizers.l1(regularize_rate), 
+                                     activity_regularizer=keras.regularizers.l1(regularize_rate), 
                                      kernel_constraint=None, 
                                      bias_constraint=None)
             
             self.dnn_model.add(new_layer)
         
         # Output layer
+        
+        # [optional] adding batch nomalization
+        nor_layer = keras.layers.BatchNormalization(axis=-1, 
+                                                    momentum=0.99, epsilon=0.001, 
+                                                    center=True, scale=True, 
+                                                    beta_initializer='zeros', gamma_initializer='ones', 
+                                                    moving_mean_initializer='zeros', 
+                                                    moving_variance_initializer='ones', 
+                                                    beta_regularizer=None, 
+                                                    gamma_regularizer=None, 
+                                                    beta_constraint=None, 
+                                                    gamma_constraint=None)
+        self.dnn_model.add(nor_layer)
+        
         kernel_initializer = keras.initializers.glorot_normal(seed = index + 10)
         out_layer = layers.Dense(self.label_train.shape[0],
                                  activation=None, 
                                  use_bias=True, 
                                  kernel_initializer=kernel_initializer, 
                                  bias_initializer='zeros', 
-                                 kernel_regularizer=keras.regularizers.l2(regularize_rate), 
-                                 bias_regularizer=keras.regularizers.l2(regularize_rate), 
-                                 activity_regularizer=None, 
+                                 kernel_regularizer=keras.regularizers.l1(regularize_rate), 
+                                 bias_regularizer=keras.regularizers.l1(regularize_rate), 
+                                 activity_regularizer=keras.regularizers.l1(regularize_rate), 
                                  kernel_constraint=None, 
                                  bias_constraint=None )
         self.dnn_model.add(out_layer)
         
         # Set optimizer
-        optimizer = keras.optimizers.RMSprop(lr=learning_rate, rho=0.9, epsilon=None, decay=0.0)
+#        optimizer = keras.optimizers.RMSprop(lr=learning_rate, rho=0.9, epsilon=None, decay=0.0)
+        optimizer = keras.optimizers.Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=0.00000001, decay=0.0, amsgrad=False)
         
         # Compile the DNN model
-        self.dnn_model.compile(loss='mse',
+        self.dnn_model.compile(loss='mae',
                      optimizer=optimizer,
                      metrics=['mae', 'mse'])
         
@@ -867,7 +897,7 @@ class raven_dnn_estimator:
             print('.', end='')
         
         # Set early stop
-        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.005, patience=200, 
+        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.005, patience=100000, 
                                       verbose=0, mode='min', baseline=None)
         
         EPOCHS = EPOCHS
@@ -884,7 +914,7 @@ class raven_dnn_estimator:
         hist.tail()
         
         if show_plot == True:
-            plot_history(self.history, hist)
+            plot_history(self.history, hist , self.normalize_matrix_label)
         
         loss, mae, mse = self.dnn_model.evaluate(self.data_vali.T, self.label_vali.T, verbose=0)
         
@@ -903,7 +933,8 @@ class raven_dnn_estimator:
                        dropping_threshold = 0.05,
                        max_added_features = 5, 
                        max_iteration = 10,
-                       show_plot = False):
+                       show_plot = False,
+                       show_operations = True):
         
         print_dash_line()
         print("[RAVEN_DNN]: Iterative training and feature generating begin")
@@ -977,9 +1008,11 @@ class raven_dnn_estimator:
                             learning_rate=learning_rate, 
                             regularize_rate=regularize_rate)# Run training again to prevent input size error
         self.dnn_train(EPOCHS=EPOCHS , batch_size =batch_size, show_vali_report = False) # Run training again to prevent input size error
-        self.info_operation()
         
-        self.info_loss_decrease_percent()
+        if show_operations == True:        
+            self.info_operation()
+            self.info_loss_decrease_percent()
+        
         print_dash_line()
         
         return None
@@ -992,13 +1025,19 @@ class raven_dnn_estimator:
         if outside_input_signal == 0:
             print("[RAVEN_DNN]: No input provided, using raw data")
             if self.raven_data_signal == 0:
-                data_input = self.data_raw
+#                data_input = self.data_raw
+                data_input = self.data_raw[:,self.shuffle_seed_test]
             elif self.raven_data_signal == 1:
-                toggled_seed_ravenstate = self.seed_ravenstate_idx[range(0,self.seed_ravenstate_idx.size,20)]
-                data_input = self.data_raw[:,[toggled_seed_ravenstate]]
+#                toggled_seed_ravenstate = self.seed_ravenstate_idx[range(0,self.seed_ravenstate_idx.size,20)]
+#                data_input = self.data_raw[:,[toggled_seed_ravenstate]]
+                data_input = (self.data_raw[:,self.seed_ravenstate_idx])[:,self.shuffle_seed_test]
         if outside_input_signal == 0:
             print("[RAVEN_DNN]: No ground truth provided, using original label")
-            output_truth = self.label_origin[:,[range(0,self.label_origin.shape[1],20)]]
+            if self.raven_data_signal == 0:
+                output_truth = self.label_origin[:,self.shuffle_seed_test]
+            elif self.raven_data_signal == 1:
+#            output_truth = self.label_origin[:,[range(0,self.label_origin.shape[1],20)]]
+                output_truth = self.label_origin[:,self.shuffle_seed_test]
         data_input = np.squeeze(data_input)
         output_truth = np.squeeze(output_truth)
         # First, normalize the data
@@ -1173,8 +1212,8 @@ def print_dash_line():
     print("-----------------------------------------------------")
     return None
         
-def plot_history(history, hist):
-          plt.figure(1)
+def plot_history(history, hist , normalize_matrix_label):
+          plt.figure()
           plt.xlabel('Epoch')
           plt.ylabel('Mean Abs Error [MPG]')
           plt.plot(hist['epoch'], hist['mean_absolute_error'],
@@ -1184,7 +1223,7 @@ def plot_history(history, hist):
           plt.legend()
           plt.ylim([0,1])
           
-          plt.figure(2)
+          plt.figure()
           plt.xlabel('Epoch')
           plt.ylabel('Mean Square Error [$MPG^2$]')
           plt.plot(hist['epoch'], hist['mean_squared_error'],
@@ -1193,6 +1232,26 @@ def plot_history(history, hist):
                    label = 'Val Error')
           plt.legend()
           plt.ylim([0,2])
+          
+          # the following part is for RAVEN situation, mute this part if not working on RAVEN's data
+          avg_std = np.average(normalize_matrix_label[:,1])
+          plt.figure()
+          plt.xlabel('Epoch')
+          plt.ylabel('Mean Abs Error [mm]')
+          plt.plot(hist['epoch'], avg_std*hist['mean_absolute_error'],
+                   label='Train Error')
+          plt.plot(hist['epoch'], avg_std*hist['val_mean_absolute_error'],
+                   label = 'Val Error')
+          plt.legend()
+          
+          plt.figure()
+          plt.xlabel('Epoch')
+          plt.ylabel('Mean Std Error [mm]')
+          plt.plot(hist['epoch'], avg_std * np.sqrt(hist['mean_squared_error']),
+                   label='Train Error')
+          plt.plot(hist['epoch'], avg_std * np.sqrt(hist['val_mean_squared_error']),
+                   label = 'Val Error')
+          plt.legend()
           
 # This is a function to find the nearest value 
 def find_nearest(array,value):

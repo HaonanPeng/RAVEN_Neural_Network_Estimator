@@ -1,11 +1,11 @@
 close all, clear all, clc
 
-ball_traj_frameWorld_CV = importdata('data_files/img_process_result_traj11_filtered.txt');
-raven_center_traj_frameWorld_CV = importdata('data_files/img_process_result_traj11_raven_center_filtered.txt');
-raven_state = importdata('data_files/raven_state_traj11_toggled.txt');
+ball_traj_frameWorld_CV = importdata('data_files/img_process_result_traj13_filtered.txt');
+raven_center_traj_frameWorld_CV = importdata('data_files/img_process_result_traj13_raven_center_filtered.txt');
+raven_state = importdata('data_files/raven_state_traj13_toggled.txt');
 
-ball_traj_frameWorld_CV_unfiltered = importdata('data_files/img_process_result_traj11.txt');
-raven_center_traj_frameWorld_CV_unfiltered = importdata('data_files/img_process_result_traj11_raven_center.txt');
+ball_traj_frameWorld_CV_unfiltered = importdata('data_files/img_process_result_traj13.txt');
+raven_center_traj_frameWorld_CV_unfiltered = importdata('data_files/img_process_result_traj13_raven_center.txt');
 
 um2mm = 0.001;
 

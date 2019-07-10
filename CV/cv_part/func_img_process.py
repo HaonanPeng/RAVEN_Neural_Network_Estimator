@@ -4,12 +4,14 @@ import numpy as np
 import time
 import func_camera_info_process
 import sys
+from copy import deepcopy
 
 
 # Main part of image processing
 class img_processor:
     
-    write_log = 1 # if 1, the console output will be write in to log file
+    write_log = 0 # if 1, the console output will be write in to log file
+    show_plot = 0
     
     # Data files path
     bagfile_folder_path = "bagfiles/"
@@ -28,6 +30,16 @@ class img_processor:
     selected_frames_path_cam2 = bagfile_folder_path + "selected_frames_cam2/"
     selected_frames_path_cam3 = bagfile_folder_path + "selected_frames_cam3/"
     
+    # frame jumper 
+    auto_frame_jump = 0
+    manual_frame_jump = 0
+    frame_jump_flag = 0
+    frame_jump_num = 5
+    frame_jump_2d_move_add = 20
+    frame_jump_range = None
+    
+    
+
     # Time stamps
     # For this and following defination, [0-3] means 4 cameras, and [4] means raven 
     time_str_vec = None
@@ -77,11 +89,12 @@ class img_processor:
     # index seed, will be used in the filter
     idx_seed = None
     
-    time_difference = -3.2 # This is the difference between the two computers, if the 4 webcams are connected to one computer, this should be 0
+    time_difference = -1.5 # This is the difference between the two computers, if the 4 webcams are connected to one computer, this should be 0
 #    initial_time = 0.0
 
     # to save the max/min radius
     ref_radius_pool = np.array([])    
+    
 
     # Load the time stamps and set initial values         
     def load_time_str(self):
@@ -167,6 +180,8 @@ class img_processor:
         self.img_cur[3] = cv2.imread(self.cam3_folder_path + str("%.6f" % (self.time_str_cur[3] + self.time_difference)) + ".jpg")
         
     def locate_ball(self,index_iteration):
+        # create a copy of a camera_info for roll-back operation
+        old_camera_info = deepcopy(self.camera_info)
 
         def update_ref_radius(list_update):
             for idx_ball in range(self.camera_info.num_ball): 
@@ -175,6 +190,7 @@ class img_processor:
                         idx_cam = int(list_update[idx_ball][i])
                         # updat reference circle radius
                         dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_ball,idx_cam] # delta time step
+                        
                         self.camera_info.cam[idx_cam].circle_radius_max[idx_ball] += dt*self.camera_info.cam[idx_cam].circle_radius_expand
                         self.camera_info.cam[idx_cam].circle_radius_min[idx_ball] -= dt*self.camera_info.cam[idx_cam].circle_radius_expand 
                         # limit reference radius in reasonable range
@@ -195,12 +211,23 @@ class img_processor:
         else:
             self.img_cur = self.camera_info.ball_img_detect_locate(self.img_cur, carve_sign = 0)
             
-
         # if one of balls with no detection then quit sysetm
         for idx_ball in range(self.camera_info.num_ball):
-            if len(self.camera_info.listBall_effCam[idx_ball])==0:
-                print('ball',idx_ball,'is not detected in any current camera frame, system suspend\n')
-                sys.exit(0)
+            if len(self.camera_info.listBall_effCam[idx_ball])==0 and self.auto_frame_jump == 1: 
+                self.camera_info = deepcopy(old_camera_info)
+                self.frame_jump_flag = 1
+                print('[Frame Jump] ball',idx_ball,'is not detected in any current camera frame, jump',self.frame_jump_num,'frames \n')
+            elif len(self.camera_info.listBall_effCam[idx_ball])==0 and self.auto_frame_jump == 0:
+                print('[Error] ball',idx_ball,'is not detected in any current camera frame, exit')
+                sys.exit()
+                
+        if self.manual_frame_jump == 1 :
+            for jump_range_pair in self.frame_jump_range:
+                if self.frame_counter >= jump_range_pair[0] and self.frame_counter < jump_range_pair[1]:
+                    self.camera_info = deepcopy(old_camera_info)
+                    self.frame_jump_flag = 1
+                    self.frame_jump_num = jump_range_pair[1] - jump_range_pair[0] + 1
+                    print('[Frame Jump]Manual frame jump is working now, jump from frame ' , self.frame_counter , ' for ' , self.frame_jump_num , 'frames')
 
         # verify if the ball center 2D movement (effective frames) is in reasonable range
         listBall_effCam_remove = [[] for _ in range(self.camera_info.num_ball)]
@@ -212,11 +239,19 @@ class img_processor:
                     move_distance_2d = np.linalg.norm(self.camera_info.cam[idx_cam].img_ball_center[idx_ball] - self.camera_info.cam[idx_cam].img_ball_center_lastframe[idx_ball])
                     # verify if movement is in reasonable range
                     dt = self.time_str_cur[idx_cam]-self.time_eff_frame[idx_ball,idx_cam] # delta time step
-                    if (move_distance_2d)>(dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]+self.move_distance_base):
+
+                    if self.frame_jump_flag == 0:
+                        move_distance_2d_limit = dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]+self.move_distance_base
+                    else:
+                        move_distance_2d_limit = dt*self.camera_info.cam[idx_cam].ball_move_rate_img[idx_ball]+self.move_distance_base+self.frame_jump_2d_move_add
+                    
+                    if (move_distance_2d)>move_distance_2d_limit:
                         # remove uneffective camera index
                         listBall_effCam_remove[idx_ball].append(idx_cam)#############################
                         print('[Warning]:','cam',idx_cam,' ball',idx_ball, 'moves', move_distance_2d, '(pixels), out of reasonable 2d range\n')  
-        
+            
+            self.frame_jump_flag = 0
+
         # remove the ball-out-of-range cam-index from list 
         for idx_ball in range(self.camera_info.num_ball):
             if len(listBall_effCam_remove[idx_ball])!=0:
@@ -226,10 +261,22 @@ class img_processor:
 
         print('effective list (without back-to-work):',self.camera_info.listBall_effCam)
         for idx_ball in range(self.camera_info.num_ball):
-            if len(self.camera_info.listBall_effCam[idx_ball])<=1:
+            if len(self.camera_info.listBall_effCam[idx_ball])<=1 and self.auto_frame_jump == 1:
                 self.save_img()
-                print('ball',idx_ball,'does not have enough effective camera frame, system suspend\n')
-                sys.exit(0)
+                self.camera_info = deepcopy(old_camera_info)
+                self.frame_jump_flag = 1
+                print('[Frame Jump] ball',idx_ball,'does not have enough effective camera frame, jump',self.frame_jump_num,'frames \n')
+            elif len(self.camera_info.listBall_effCam[idx_ball])<=1 and self.auto_frame_jump == 0:
+                print('[Error] ball',idx_ball,'does not have enough effective camera frame, exit')
+                sys.exit()
+        if self.manual_frame_jump == 1 :
+            for jump_range_pair in self.frame_jump_range:
+                if self.frame_counter >= jump_range_pair[0] and self.frame_counter < jump_range_pair[1]:
+                    self.save_img()
+                    self.camera_info = deepcopy(old_camera_info)
+                    self.frame_jump_flag = 1
+                    self.frame_jump_num = jump_range_pair[1] - jump_range_pair[0] + 1
+                    print('[Frame Jump] Manual frame jump is working now, jump from frame ' , self.frame_counter , ' for ' , self.frame_jump_num , 'frames')      
 
 
         # generate the list of trusted frame  (effective in both last time and current time)
@@ -238,10 +285,22 @@ class img_processor:
         listBall_effCam_trust = [[] for _ in range(self.camera_info.num_ball)]
         for idx_ball in range(self.camera_info.num_ball):
             listBall_effCam_trust[idx_ball] = [x for x in self.camera_info.listBall_effCam[idx_ball] if x in self.camera_info.listBall_effCam_last[idx_ball]]
-            if len(listBall_effCam_trust[idx_ball])<=1:
+            if len(listBall_effCam_trust[idx_ball])<=1 and self.auto_frame_jump == 1:
                 self.save_img()
-                print('ball',idx_ball,'does not have enough effective camera frame(in current&last), system suspend\n')
-                sys.exit(0)
+                self.camera_info = deepcopy(old_camera_info)
+                self.frame_jump_flag = 1
+                print('[Frame Jump] ball',idx_ball,'does not have enough effective camera frame(in current&last), jump',self.frame_jump_num,'frames \n')
+            elif len(self.camera_info.listBall_effCam[idx_ball])<=1 and self.auto_frame_jump == 0:
+                print('[Error] ball',idx_ball,'does not have enough effective camera frame, exit')
+                sys.exit()
+        if self.manual_frame_jump == 1 :
+            for jump_range_pair in self.frame_jump_range:
+                if self.frame_counter >= jump_range_pair[0] and self.frame_counter < jump_range_pair[1]:
+                    self.save_img()
+                    self.camera_info = deepcopy(old_camera_info)
+                    self.frame_jump_flag = 1
+                    self.frame_jump_num = jump_range_pair[1] - jump_range_pair[0] + 1
+                    print('[Frame Jump] Manual frame jump is working now, jump from frame ' , self.frame_counter , ' for ' , self.frame_jump_num , 'frames')       
     
         # generate the list of frame back to work (uneffective in last time, effective in current time)
         listBall_effCam_new = [[] for _ in range(self.camera_info.num_ball)]
@@ -344,6 +403,21 @@ class img_processor:
         file_name = self.bagfile_folder_path + "idx_seed.txt"
         np.savetxt(file_name, self.idx_seed)
         
+    def set_frame_jump(self , jump_type = 'auto' , move_range = 20 , auto_jump_frames = 5 , manual_jump_frames = None):
+        if jump_type == 'auto':
+            self.auto_frame_jump = 1
+            self.frame_jump_num = auto_jump_frames
+            self.frame_jump_2d_move_add = move_range
+        elif jump_type == 'manual':
+            self.manual_frame_jump = 1
+            self.frame_jump_2d_move_add = move_range
+            self.frame_jump_range = manual_jump_frames
+        else:
+            self.auto_frame_jump = 0
+            self.manual_frame_jump = 0
+            self.frame_jump_2d_move_add = 0
+            self.frame_jump_range = None
+        
     def show_idx_time(self):
         print ("___________________________________________________________")
         print ("[IMG_PROCESSOR]:Frame counter: " + str(self.frame_counter))
@@ -395,6 +469,16 @@ class img_processor:
             file=open('img_process_result.txt','ab')
             np.savetxt(file, self.result_matrix, fmt='%.4f',delimiter='\t')
             file.close()
+            
+    def set_write_log(self, signal):
+        self.write_log = signal
+        return None
+    
+    def set_show_plot(self, signal):
+        self.show_plot = signal
+        self.camera_info.set_show_plot(signal)
+        return None
+        
             
         
 

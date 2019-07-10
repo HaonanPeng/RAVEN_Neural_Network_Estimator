@@ -85,7 +85,7 @@ end
 
 %% seperate an untouched test data set
 % if do not want to seperate, mute this part
-seperate_start = 0.4; % this is where the seperation started, such as 0.6 means start from 60% of the data
+seperate_start = 0.8; % this is where the seperation started, such as 0.6 means start from 60% of the data
 seperate_rate = 0.05; % this is the percentage of the seperated data
 seperate_end = seperate_start + seperate_rate;
 
