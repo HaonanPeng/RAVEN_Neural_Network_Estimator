@@ -1,0 +1,40 @@
+<launch>
+
+  <node
+    pkg="rosbag"
+    type="record"
+    name="camera0_recorder"
+    args="-b 0 -O camera0_recorder.bag /usb_cam0/image_raw"
+  />
+
+  <node
+    pkg="rosbag"
+    type="record"
+    name="camera1_recorder"
+    args="-b 0 -O camera1_recorder.bag /usb_cam1/image_raw"
+  />
+
+  <node
+    pkg="rosbag"
+    type="record"
+    name="camera2_recorder"
+    args="-b 0 -O camera2_recorder.bag /usb_cam2/image_raw"
+  />
+
+  <node
+    pkg="rosbag"
+    type="record"
+    name="camera3_recorder"
+    args="-b 0 -O camera3_recorder.bag /usb_cam3/image_raw"
+  />
+
+  <node
+    pkg="rosbag"
+    type="record"
+    name="raven_state_recorder"
+    args="-b 0 -O raven_state_recorder.bag /ravenstate"
+  />
+
+  
+
+</launch>

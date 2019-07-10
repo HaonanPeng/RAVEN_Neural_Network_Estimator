@@ -25,6 +25,9 @@ import matplotlib.pyplot as plt
 
 from keras.utils import plot_model
 
+import func_filters as ff
+import func_name_ravenstate as name_ravenstate
+
 
 
 class raven_dnn_estimator:
@@ -76,6 +79,13 @@ class raven_dnn_estimator:
     label_train = None
     label_vali = None
     label_test = None
+    
+    # signal indecating using ravenstate like signal or not. If =1, means feature rate is larger than label rate, this will benefit taking derivative
+    # if raven_data_signal=1, then the following two time must be provided to find index 
+    raven_data_signal = None
+    time_data = None
+    time_label = None
+    seed_ravenstate_idx = None # this will record the index of ravenstate that is consistent to the label time
     
     #--------------------------------------------------------------------------
     # DNN relatives
@@ -194,10 +204,19 @@ class raven_dnn_estimator:
         
         
         #----------------------------------------------------------------------------------
-        np.savetxt ("test_data.txt", data )
-        np.savetxt ("test_label.txt", label )
+        folder_name = "data_folder/"
+        np.savetxt ( folder_name + "test_data.txt", data )
+        np.savetxt ( folder_name + "test_label.txt", label )
+        np.savetxt ( folder_name + "test_operation.txt", np.int_(operation_origin))
         
-        np.savetxt ("test_operation.txt", operation_origin)
+        #[BUG] Currently cannot load string txt file as usable list
+#        data_name_file = open("test_data_name.txt" , "w")
+#        for content in data_name:
+#            data_name_file.write(content + "\n")
+#            
+#        label_name_file = open("test_label_name.txt" , "w")
+#        for content in label_name:
+#            label_name_file.write(content + "\n")
         
         # Set initial values for the objects in the class
         self.data_origin = data
@@ -214,27 +233,54 @@ class raven_dnn_estimator:
         self.normalize_matrix_data = np.zeros((data.shape[0],2))
         self.normalize_matrix_label = np.zeros((label.shape[0],2))
         
+        self.raven_data_signal = 0
+        
         print("[RAVEN_DNN]: Using testing data, more details can be found in <func_raven_dnn.py>")
         
         return data, label, operation_origin
     
     # [UNFINISHED] Load data from txt file
-    def load_txt_data(self, data = None, label = None, operation_origin = None, data_name = None, label_name = None):
-        data_file_name = "test_data_RotationMatrix.txt"
-        label_file_name = "test_label_RotationMatrix.txt"
-        operation_file_name = "test_operation_raven.txt"
+    def load_data(self, data = None, label = None, operation_origin = None, data_name = None, label_name = None, raven_data_signal = 0, time_data = None, time_label = None , seed_ravenstate_idx = None):
+        folder_name = "data_folder/"
+        
+        data_file_name = folder_name + "test_data.txt"
+        label_file_name = folder_name + "test_label.txt"
+        operation_file_name = folder_name + "test_operation.txt"
         
         
         print_dash_line()
-        print("[RAVEN_DNN]: Load data from txt files")
+        print("[RAVEN_DNN]: Loading data ")
         
-        if data == None:
-#            data = np.array([np.loadtxt(data_file_name)])
-            data = np.loadtxt(data_file_name)
-        if label == None:
-            label = np.loadtxt(label_file_name)
-#        if operation_origin == None:
-#            operation_origin = np.loadtxt(operation_file_name)
+        try:
+            if data == None:
+                print("[RAVEN_DNN]:No data provided, trying to load data from txt file")
+                data = np.loadtxt(data_file_name)
+                try:
+                    test_dimesion = data.shape[1]
+                except:
+                    data = np.array([data])
+            if label == None:
+                print("[RAVEN_DNN]:No label provided, trying to load label from txt file")
+                label = np.loadtxt(label_file_name)
+                try:
+                    test_dimesion = label.shape[1]
+                except:
+                    label = np.array([label])
+            if operation_origin == None:
+                print("[RAVEN_DNN]:No operation provided, trying to load operation from txt file")
+                operation_origin = np.int_(np.loadtxt(operation_file_name))
+                try:
+                    test_dimesion = operation_origin.shape[1]
+                except:
+                    operation_origin = np.array([operation_origin])
+        except:
+            print("[RAVEN_DNN]:ERROR: Loading data from txt failed, please check the folder")
+            
+        self.raven_data_signal = raven_data_signal
+        
+        if self.raven_data_signal == 1:
+            self.seed_ravenstate_idx = np.int_(seed_ravenstate_idx)
+            print("[RAVEN_DNN]: Using RAVEN data, index initialized")
             
         self.data_origin = data
         self.data_raw = data
@@ -245,18 +291,20 @@ class raven_dnn_estimator:
         self.name_data = data_name
         self.name_label = label_name
         
-        self.data_normaled = np.zeros(data.shape)
+        self.data_normaled = np.zeros((data.shape[0],label.shape[1]))
         self.label_normaled = np.zeros(label.shape)
         self.normalize_matrix_data = np.zeros((data.shape[0],2))
         self.normalize_matrix_label = np.zeros((label.shape[0],2))
         print("[RAVEN_DNN]: All data loaded")
+        
+        print_dash_line()
         return None
     
     # Initialize the system, then the system will be ready to train DNN, and add new features will be available
-    def init_system(self):
+    def init_system(self, train_pct = 0.6, vali_pct = 0.2, test_pct = 0.2 , continuous_signal = 0, seperations = 3):
+        self.set_percent(train_pct = train_pct, vali_pct = vali_pct, test_pct = test_pct)
+        self.set_shuffle_seed(continuous_signal = continuous_signal, seperations = seperations)
         self.generate_data()
-        self.set_percent()
-        self.set_shuffle_seed()
         self.normalize_data()
         self.load_dnn_sets()
         self.update_feature_name()
@@ -267,8 +315,8 @@ class raven_dnn_estimator:
     # Updata data raw from data_origin to data_raw, according to operation matrix
     def generate_data(self):
         # Rearrange the data_raw to fit the size
-        self.data_raw = np.zeros((self.operation_matrix.shape[0], self.data_origin.shape[1]))
-        
+        self.data_raw = np.zeros((self.data_origin.shape[0], self.data_origin.shape[1]))
+        self.init_dnn_sets_shape()
         for index in range(0,self.operation_matrix.shape[0]):
             operation_pair = self.operation_matrix[index]
             operation_object = operation_pair[0]
@@ -277,7 +325,7 @@ class raven_dnn_estimator:
             if operation_type == -1: # Original data, do nothing
                 new_line = self.data_origin[index]
             else:
-                new_line = self.generate_new_feature_line(self, operation_pair)
+                new_line = self.add_new_feature([operation_pair], arg = [None], show_report = False)
             self.data_raw[index] = new_line
                 
     def normalize_data(self):
@@ -285,26 +333,41 @@ class raven_dnn_estimator:
         self.normalize_matrix_data = np.zeros((self.data_raw.shape[0],2))
         self.normalize_matrix_label = np.zeros((self.label_origin.shape[0],2))
         
-        # Normalize data
-        for line_index in range(0, self.data_raw.shape[0]):
-            data_line_nor, mean, std = self.normalize_line(self.data_raw[line_index])
-            self.normalize_matrix_data[line_index] = [mean, std]
-            self.data_normaled[line_index] = data_line_nor
-            
-        # Normalize label
-        for line_index in range(0, self.label_origin.shape[0]):
-            data_line_nor, mean, std = self.normalize_line(self.label_origin[line_index])
-            self.normalize_matrix_label[line_index] = [mean, std]
-            self.label_normaled[line_index] = data_line_nor
-        
+        if self.raven_data_signal == 0:
+            # Normalize data
+            for line_index in range(0, self.data_raw.shape[0]):
+                data_line_nor, mean, std = self.normalize_line(self.data_raw[line_index])
+                self.normalize_matrix_data[line_index] = [mean, std]
+                self.data_normaled[line_index] = data_line_nor
+                
+            # Normalize label
+            for line_index in range(0, self.label_origin.shape[0]):
+                data_line_nor, mean, std = self.normalize_line(self.label_origin[line_index])
+                self.normalize_matrix_label[line_index] = [mean, std]
+                self.label_normaled[line_index] = data_line_nor
+                
+        if self.raven_data_signal == 1:
+            # Normalize data
+            for line_index in range(0, self.data_raw.shape[0]):
+                data_line_nor, mean, std = self.normalize_line(self.data_raw[line_index][self.seed_ravenstate_idx])
+                self.normalize_matrix_data[line_index] = [mean, std]
+                self.data_normaled[line_index] = data_line_nor
+                
+            # Normalize label
+            for line_index in range(0, self.label_origin.shape[0]):
+                label_line_nor, mean, std = self.normalize_line(self.label_origin[line_index])
+                self.normalize_matrix_label[line_index] = [mean, std]
+                self.label_normaled[line_index] = label_line_nor
         print("[RAVEN_DNN]: Data normalization finished")
+        
     
     # Load DNN sets( such as training set, including labels), after this, the system will be ready to train DNN       
     def load_dnn_sets(self):
+        #Initialize the shape
         self.data_train = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_train)))
         self.data_vali = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_vali)))
         self.data_test = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_test)))
-        
+        #Initialize the shape
         self.label_train = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_train)))
         self.label_vali = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_vali)))
         self.label_test = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_test)))
@@ -320,6 +383,19 @@ class raven_dnn_estimator:
             self.label_train[line_index] = label_line[self.shuffle_seed_train]
             self.label_vali[line_index] = label_line[self.shuffle_seed_vali]
             self.label_test[line_index] = label_line[self.shuffle_seed_test]
+            
+    def init_dnn_sets_shape(self):
+        #Initialize the shape
+        self.data_train = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_train)))
+        self.data_vali = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_vali)))
+        self.data_test = np.zeros((self.data_normaled.shape[0],np.size(self.shuffle_seed_test)))
+        #Initialize the shape
+        self.label_train = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_train)))
+        self.label_vali = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_vali)))
+        self.label_test = np.zeros((self.label_normaled.shape[0],np.size(self.shuffle_seed_test)))
+        
+        return None
+        
     
     # set operation pool            
     def set_operation_pool(self, operation_pool):
@@ -335,7 +411,10 @@ class raven_dnn_estimator:
                 return None
             
             if operation_type == 1: # take derivative
-                new_line = np.gradient(self.data_raw[operation_object], 0.1 ,edge_order = 2)
+                if arg ==[None]:
+                    new_line = np.gradient(self.data_raw[operation_object], 0.001 ,edge_order = 2)
+                elif self.raven_data_signal == 1:
+                    new_line = ff.mov_avr_derivative(self.data_raw[operation_object], 0.001 , window_size = 101)
                 
             elif operation_type == 2: # power
                 origin_object = operation_object
@@ -361,7 +440,7 @@ class raven_dnn_estimator:
             elif operation_type == 6: # Intergral
                 new_line = np.zeros(self.data_raw[operation_object].shape)
                 for inter_lenth in range(0, self.data_raw[operation_object].shape[0]):
-                  new_line[inter_lenth] = np.trapz(self.data_raw[operation_object][0:inter_lenth], x = arg[0], dx = 0.1)
+                  new_line[inter_lenth] = np.trapz(self.data_raw[operation_object][0:inter_lenth], x = arg[0], dx = 0.001)
             
             elif operation_type == 7: # Square root
                 if self.data_raw[operation_object].min() > 0:
@@ -390,7 +469,7 @@ class raven_dnn_estimator:
     def update_feature_name(self):
         name_data_origin = self.get_name_data_origin()
         self.name_data = name_data_origin
-        
+        self.operation_matrix = np.int_(self.operation_matrix) # Make sure all the elements are int type
         for line_index in range(0, self.operation_matrix.shape[0]):
             if self.operation_matrix[line_index][0] == -1:
                 continue
@@ -460,19 +539,57 @@ class raven_dnn_estimator:
         self.percent_test = test_pct
         return
     
-    def set_shuffle_seed(self):
-        size_total = np.size(self.data_origin[0])
-        shuffle_poor = np.arange(size_total)
-        np.random.shuffle(shuffle_poor)
-        
-        size_train = int(size_total * self.percent_train)
-        size_vali = int(size_total * self.percent_vali)
-        size_test = int(size_total * self.percent_test)
-        
-        self.shuffle_seed_train = shuffle_poor[0 : size_train]
-        self.shuffle_seed_vali = shuffle_poor[size_train : size_train+size_vali]
-        self.shuffle_seed_test = shuffle_poor[size_train+size_vali : size_train+size_vali+size_test]
-        
+    # Notice that the seperation shold not be larger than 5
+    def set_shuffle_seed(self, continuous_signal = 0, seperations = 3):
+        if continuous_signal == 0:
+            size_total = np.size(self.label_origin[0])
+            shuffle_poor = np.arange(size_total)
+            np.random.shuffle(shuffle_poor)
+            
+            size_train = int(size_total * self.percent_train)
+            size_vali = int(size_total * self.percent_vali)
+            size_test = int(size_total * self.percent_test)
+            
+            self.shuffle_seed_train = shuffle_poor[0 : size_train]
+            self.shuffle_seed_vali = shuffle_poor[size_train : size_train+size_vali]
+            self.shuffle_seed_test = shuffle_poor[size_train+size_vali : size_train+size_vali+size_test]
+            
+        if continuous_signal == 1:
+            size_total = np.size(self.label_origin[0])
+            shuffle_poor = np.arange(size_total)
+            
+            # validation
+            single_size_vali = int(1/seperations * self.percent_vali *size_total)         
+            vali_firstcall = 0
+            for iter in range(0,seperations):
+                start_idx_vali = int(size_total*(0.05 + (0.85-self.percent_vali/seperations)*np.random.rand()))
+                end_idx_vali = start_idx_vali + single_size_vali
+                if vali_firstcall == 0:
+                    vali_seed = np.array(range(start_idx_vali , end_idx_vali))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_vali , end_idx_vali)))
+                    vali_firstcall = 1
+                else:
+                    vali_seed = np.append(vali_seed , np.array(range(start_idx_vali , end_idx_vali)))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_vali , end_idx_vali)))
+                
+            # test set
+            single_size_test = int(1/seperations * self.percent_test *size_total)         
+            test_firstcall = 0
+            for iter in range(0,seperations):
+                start_idx_test = int(size_total*(0.05 + (0.85-self.percent_test/seperations)*np.random.rand()))
+                end_idx_test = start_idx_test + single_size_test
+                if test_firstcall == 0:
+                    test_seed = np.array(range(start_idx_test , end_idx_test))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_test , end_idx_test)))
+                    test_firstcall = 1
+                else:
+                    test_seed = np.append(test_seed , np.array(range(start_idx_test , end_idx_test)))
+                    shuffle_poor = np.delete(shuffle_poor , np.array(range(start_idx_test , end_idx_test)))
+                
+            self.shuffle_seed_train = shuffle_poor
+            self.shuffle_seed_vali = vali_seed
+            self.shuffle_seed_test = test_seed
+
         print("[RAVEN_DNN]: Shuffle seed has been set")
         return
     
@@ -480,7 +597,8 @@ class raven_dnn_estimator:
         mean = np.mean(data_line)
         std = np.std(data_line)     
         if std == 0:
-            print("[RAVEN_DNN]Warning: std is 0")
+            std = 0.001
+#            print("[RAVEN_DNN]Warning: std is 0, setting to a small value")
         data_line_nor = (data_line - mean)/ std
         
         return data_line_nor, mean, std
@@ -498,10 +616,11 @@ class raven_dnn_estimator:
         for operation_pair in operation:
             # First, update data_raw
             new_line = self.generate_new_feature_line(operation_pair, arg = arg)
+            new_line_raw = new_line
             self.data_raw = np.append(self.data_raw,[new_line], axis=0)
             
             # Next, update data_normaled and normalize_data_matrix
-            new_line_nor, mean , std = self.normalize_line(new_line)
+            new_line_nor, mean , std = self.normalize_line(new_line[self.seed_ravenstate_idx])
             self.normalize_matrix_data = np.append(self.normalize_matrix_data, [[mean, std]], axis = 0)
             self.data_normaled = np.append(self.data_normaled, [new_line_nor], axis = 0)
             
@@ -517,6 +636,7 @@ class raven_dnn_estimator:
             self.update_feature_name()
             if show_report == True:
                 print("[RAVEN_DNN]: New feature added -- " + self.name_data[-1])
+        return new_line_raw
             
             
             
@@ -686,16 +806,17 @@ class raven_dnn_estimator:
         kernel_initializer = keras.initializers.glorot_normal(seed = 1)
         
         # Define leaky RELU
-        
+#        leaky_RELU = keras.activations.relu(x, alpha=0.1, max_value=None, threshold=0.0)
         # Input layer
-        input_layer = layers.Dense(10, 
-                                     activation='relu', 
+        size_input_layer = layers_matrix[0][1]
+        input_layer = layers.Dense(size_input_layer, 
+                                     activation='elu', 
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
                                      bias_initializer='zeros', 
                                      kernel_regularizer=keras.regularizers.l1(regularize_rate), 
                                      bias_regularizer=keras.regularizers.l1(regularize_rate), 
-                                     activity_regularizer=None, 
+                                     activity_regularizer=keras.regularizers.l1(regularize_rate), 
                                      kernel_constraint=None, 
                                      bias_constraint=None,
                                      input_shape=[self.data_train.shape[0]])
@@ -703,21 +824,49 @@ class raven_dnn_estimator:
         
         # Hidden Layer
         for index, size in layers_matrix:
+            
+            # [optional] adding batch nomalization
+            nor_layer = keras.layers.BatchNormalization(axis=-1, 
+                                                        momentum=0.99, epsilon=0.001, 
+                                                        center=True, scale=True, 
+                                                        beta_initializer='zeros', gamma_initializer='ones', 
+                                                        moving_mean_initializer='zeros', 
+                                                        moving_variance_initializer='ones', 
+                                                        beta_regularizer=None, 
+                                                        gamma_regularizer=None, 
+                                                        beta_constraint=None, 
+                                                        gamma_constraint=None)
+            self.dnn_model.add(nor_layer)
+            
             kernel_initializer = keras.initializers.glorot_normal(seed = index + 2)
             new_layer = layers.Dense(size, 
-                                     activation='relu', 
+                                     activation='elu', 
                                      use_bias=True, 
                                      kernel_initializer=kernel_initializer, 
                                      bias_initializer='zeros', 
                                      kernel_regularizer=keras.regularizers.l1(regularize_rate), 
                                      bias_regularizer=keras.regularizers.l1(regularize_rate), 
-                                     activity_regularizer=None, 
+                                     activity_regularizer=keras.regularizers.l1(regularize_rate), 
                                      kernel_constraint=None, 
                                      bias_constraint=None)
             
             self.dnn_model.add(new_layer)
         
         # Output layer
+        
+        # [optional] adding batch nomalization
+        nor_layer = keras.layers.BatchNormalization(axis=-1, 
+                                                    momentum=0.99, epsilon=0.001, 
+                                                    center=True, scale=True, 
+                                                    beta_initializer='zeros', gamma_initializer='ones', 
+                                                    moving_mean_initializer='zeros', 
+                                                    moving_variance_initializer='ones', 
+                                                    beta_regularizer=None, 
+                                                    gamma_regularizer=None, 
+                                                    beta_constraint=None, 
+                                                    gamma_constraint=None)
+        self.dnn_model.add(nor_layer)
+        
         kernel_initializer = keras.initializers.glorot_normal(seed = index + 10)
         out_layer = layers.Dense(self.label_train.shape[0],
                                  activation=None, 
@@ -726,16 +875,17 @@ class raven_dnn_estimator:
                                  bias_initializer='zeros', 
                                  kernel_regularizer=keras.regularizers.l1(regularize_rate), 
                                  bias_regularizer=keras.regularizers.l1(regularize_rate), 
-                                 activity_regularizer=None, 
+                                 activity_regularizer=keras.regularizers.l1(regularize_rate), 
                                  kernel_constraint=None, 
                                  bias_constraint=None )
         self.dnn_model.add(out_layer)
         
         # Set optimizer
-        optimizer = tf.train.RMSPropOptimizer(learning_rate)
+#        optimizer = keras.optimizers.RMSprop(lr=learning_rate, rho=0.9, epsilon=None, decay=0.0)
+        optimizer = keras.optimizers.Adam(lr=learning_rate, beta_1=0.9, beta_2=0.999, epsilon=0.00000001, decay=0.0, amsgrad=False)
         
         # Compile the DNN model
-        self.dnn_model.compile(loss='mse',
+        self.dnn_model.compile(loss='mae',
                      optimizer=optimizer,
                      metrics=['mae', 'mse'])
         
@@ -747,7 +897,7 @@ class raven_dnn_estimator:
             print('.', end='')
         
         # Set early stop
-        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.005, patience=10, 
+        callback_earlystop = keras.callbacks.EarlyStopping(monitor='val_loss', min_delta=0.005, patience=100000, 
                                       verbose=0, mode='min', baseline=None)
         
         EPOCHS = EPOCHS
@@ -764,7 +914,7 @@ class raven_dnn_estimator:
         hist.tail()
         
         if show_plot == True:
-            plot_history(self.history, hist)
+            plot_history(self.history, hist , self.normalize_matrix_label)
         
         loss, mae, mse = self.dnn_model.evaluate(self.data_vali.T, self.label_vali.T, verbose=0)
         
@@ -773,7 +923,7 @@ class raven_dnn_estimator:
         
         return mae
        
-    # Interative the training, with automatical adding features    
+    # Interative the training, with automatic adding features    
     def dnn_iter_train(self, 
                        layers_matrix = [[1,20],[2,15],[3,10]],
                        learning_rate = 0.001,
@@ -783,7 +933,8 @@ class raven_dnn_estimator:
                        dropping_threshold = 0.05,
                        max_added_features = 5, 
                        max_iteration = 10,
-                       show_plot = False):
+                       show_plot = False,
+                       show_operations = True):
         
         print_dash_line()
         print("[RAVEN_DNN]: Iterative training and feature generating begin")
@@ -857,29 +1008,49 @@ class raven_dnn_estimator:
                             learning_rate=learning_rate, 
                             regularize_rate=regularize_rate)# Run training again to prevent input size error
         self.dnn_train(EPOCHS=EPOCHS , batch_size =batch_size, show_vali_report = False) # Run training again to prevent input size error
-        self.info_operation()
         
-        self.info_loss_decrease_percent()
+        if show_operations == True:        
+            self.info_operation()
+            self.info_loss_decrease_percent()
+        
         print_dash_line()
         
         return None
         
-    def dnn_make_prediction(self, data_input = None, output_truth = None):
+    def dnn_make_prediction(self, outside_input_signal = 0 , data_input = None, output_truth = None):
         
         print_dash_line()
         print("[RAVEN_DNN]: Prediction:")
         
-        if data_input == None:
+        if outside_input_signal == 0:
             print("[RAVEN_DNN]: No input provided, using raw data")
-            data_input = self.data_raw
-        if output_truth == None:
+            if self.raven_data_signal == 0:
+#                data_input = self.data_raw
+                data_input = self.data_raw[:,self.shuffle_seed_test]
+            elif self.raven_data_signal == 1:
+#                toggled_seed_ravenstate = self.seed_ravenstate_idx[range(0,self.seed_ravenstate_idx.size,20)]
+#                data_input = self.data_raw[:,[toggled_seed_ravenstate]]
+                data_input = (self.data_raw[:,self.seed_ravenstate_idx])[:,self.shuffle_seed_test]
+        if outside_input_signal == 0:
             print("[RAVEN_DNN]: No ground truth provided, using original label")
-            output_truth = self.label_origin
+            if self.raven_data_signal == 0:
+                output_truth = self.label_origin[:,self.shuffle_seed_test]
+            elif self.raven_data_signal == 1:
+#            output_truth = self.label_origin[:,[range(0,self.label_origin.shape[1],20)]]
+                output_truth = self.label_origin[:,self.shuffle_seed_test]
+        data_input = np.squeeze(data_input)
+        output_truth = np.squeeze(output_truth)
         # First, normalize the data
         input_nor = np.zeros(data_input.shape)
         line_index = 0
         for line_raw in data_input:
             input_nor[line_index] = (data_input[line_index] - self.normalize_matrix_data[line_index][0]) / self.normalize_matrix_data[line_index][1]
+            line_index = line_index + 1
+            
+        output_nor = np.zeros(output_truth.shape)
+        line_index = 0
+        for line_raw in output_truth:
+            output_nor[line_index] = (output_truth[line_index] - self.normalize_matrix_label[line_index][0]) / self.normalize_matrix_label[line_index][1]
             line_index = line_index + 1
             
         # Model prediction
@@ -896,8 +1067,6 @@ class raven_dnn_estimator:
             out_put[line_index] = line_out_put_nor * self.normalize_matrix_label[line_index][1] + self.normalize_matrix_label[line_index][0]
             line_index = line_index + 1
             
-
-        
         # Plot the result:
         line_index = 0
         for out_put_line in out_put:
@@ -911,6 +1080,9 @@ class raven_dnn_estimator:
                      label = 'Truth')
             plt.legend()
             line_index = line_index + 1
+            
+        loss, mae, mse = self.dnn_model.evaluate(input_nor.T, output_nor.T, verbose=0)
+        print("[RAVEN_DNN]: ***Test set Mean Abs Error for Prediction(if appliable)***:" + str(mae))
             
         print_dash_line()
         
@@ -994,11 +1166,33 @@ class raven_dnn_estimator:
         
         
     # Plot mdeol
-    def dnn_plot_model(self, file_name = 'Raven_dnn_model.png'):
+    def dnn_plot_model(self, file_name = 'plot_raven_dnn_model.png'):
         plot_model(self.dnn_model, to_file = file_name, 
                    show_shapes=True, 
                    show_layer_names=True, 
                    rankdir='TB')
+        
+    def dnn_save_model(self, folder_name = 'raven_dnn_model/'):
+        
+        self.dnn_model.save(folder_name + 'model_raven_dnn.h5') # save dnn model
+        np.savetxt(folder_name + 'operation_matrix.txt', self.operation_matrix)
+        
+        print_dash_line()
+        print("[RAVEN_DNN]: DNN model saved --- Folder Name: " + folder_name)
+        print_dash_line()
+        
+    def dnn_load_model(self, folder_name = 'raven_dnn_model/'):
+        print_dash_line()
+        self.dnn_model = keras.models.load_model(folder_name + 'model_raven_dnn.h5')
+        self.operation_matrix = np.loadtxt(folder_name + 'operation_matrix.txt')
+        
+#        self.data_normaled = np.zeros(self.data.shape)
+#        self.label_normaled = np.zeros(label.shape)
+#        self.normalize_matrix_data = np.zeros((data.shape[0],2))
+#        self.normalize_matrix_label = np.zeros((label.shape[0],2))
+        
+        print("[RAVEN_DNN]: DNN model loaded --- Folder Name: " + folder_name)
+        print_dash_line()
         
     # Check GPU available
     def check_gpu(self):
@@ -1018,8 +1212,8 @@ def print_dash_line():
     print("-----------------------------------------------------")
     return None
         
-def plot_history(history, hist):
-          plt.figure(1)
+def plot_history(history, hist , normalize_matrix_label):
+          plt.figure()
           plt.xlabel('Epoch')
           plt.ylabel('Mean Abs Error [MPG]')
           plt.plot(hist['epoch'], hist['mean_absolute_error'],
@@ -1029,7 +1223,7 @@ def plot_history(history, hist):
           plt.legend()
           plt.ylim([0,1])
           
-          plt.figure(2)
+          plt.figure()
           plt.xlabel('Epoch')
           plt.ylabel('Mean Square Error [$MPG^2$]')
           plt.plot(hist['epoch'], hist['mean_squared_error'],
@@ -1038,6 +1232,26 @@ def plot_history(history, hist):
                    label = 'Val Error')
           plt.legend()
           plt.ylim([0,2])
+          
+          # the following part is for RAVEN situation, mute this part if not working on RAVEN's data
+          avg_std = np.average(normalize_matrix_label[:,1])
+          plt.figure()
+          plt.xlabel('Epoch')
+          plt.ylabel('Mean Abs Error [mm]')
+          plt.plot(hist['epoch'], avg_std*hist['mean_absolute_error'],
+                   label='Train Error')
+          plt.plot(hist['epoch'], avg_std*hist['val_mean_absolute_error'],
+                   label = 'Val Error')
+          plt.legend()
+          
+          plt.figure()
+          plt.xlabel('Epoch')
+          plt.ylabel('Mean Std Error [mm]')
+          plt.plot(hist['epoch'], avg_std * np.sqrt(hist['mean_squared_error']),
+                   label='Train Error')
+          plt.plot(hist['epoch'], avg_std * np.sqrt(hist['val_mean_squared_error']),
+                   label = 'Val Error')
+          plt.legend()
           
 # This is a function to find the nearest value 
 def find_nearest(array,value):

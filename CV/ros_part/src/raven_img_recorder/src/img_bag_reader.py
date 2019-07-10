@@ -85,5 +85,6 @@ if __name__ == '__main__':
         #camera_num = "camera0"
         camera_num = sys.argv[1]
         image_creator = ImageCreator(camera_num)
+        rospy.loginfo("[RAVEN_IMG_RECORDER]: Image read complete, Camera: " + str(camera_num))
     except rospy.ROSInterruptException:
         pass

@@ -39,6 +39,10 @@ class ImageCreator():
                     txt_writer.write(" ")
 
                     for index in range(0,6):
+                        txt_writer.write("%.6f" % msg.pos[index])
+                        txt_writer.write(" ")
+
+                    for index in range(0,6):
                         txt_writer.write("%.6f" % msg.pos_d[index])
                         txt_writer.write(" ")
 
@@ -102,6 +106,8 @@ class ImageCreator():
                         txt_writer.write("%.6f" % msg.jac_f[index])
                         txt_writer.write(" ")
 
+
+
                     txt_writer.write('\n')
 
                     txt_writer.close()
@@ -113,6 +119,10 @@ class ImageCreator():
 
                     txt_writer.write(timestr)
                     txt_writer.write(" ")
+
+		    for index in range(0,6):
+                        txt_writer.write("%.6f" % msg.pos[index])
+                        txt_writer.write(" ")
 
                     for index in range(0, 6):
                         txt_writer.write("%.6f" % msg.pos_d[index])
@@ -178,6 +188,8 @@ class ImageCreator():
                         txt_writer.write("%.6f" % msg.jac_f[index])
                         txt_writer.write(" ")
 
+                    
+
 
                     txt_writer.write('\n')
 
@@ -187,5 +199,6 @@ if __name__ == '__main__':
 
     try:
         image_creator = ImageCreator()
+        rospy.loginfo("[RAVEN_IMG_RECORDER]: Raven state read complete, Camera: ")
     except rospy.ROSInterruptException:
         pass

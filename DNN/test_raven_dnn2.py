@@ -34,14 +34,14 @@ raven_dnn.dnn_iter_train(layers_matrix = [[1,50],[2,40], [3,30]],
                            batch_size = 600,
                            dropping_threshold = 0.05,
                            max_added_features = 10, 
-                           max_iteration = 0, 
+                           max_iteration = 10, 
                            show_plot = False)
-
-
-
 
 raven_dnn.dnn_make_prediction()
 raven_dnn.dnn_plot_model()
 raven_dnn.dnn_plot_features()
+raven_dnn.dnn_save_model()
 #raven_dnn.dnn_error_flag()
+
+label_name = raven_dnn.name_label
 

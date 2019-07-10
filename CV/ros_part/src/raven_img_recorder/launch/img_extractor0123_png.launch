@@ -1,0 +1,37 @@
+<launch>
+
+  <node
+    pkg="raven_img_recorder"
+    type="img_bag_reader_png.py"
+    name="img_bag_reader0"
+    args="camera0"
+  />
+
+  <node
+    pkg="raven_img_recorder"
+    type="img_bag_reader_png.py"
+    name="img_bag_reader1"
+    args="camera1"
+  />
+
+  <node
+    pkg="raven_img_recorder"
+    type="img_bag_reader_png.py"
+    name="img_bag_reader2"
+    args="camera2"
+  />
+
+  <node
+    pkg="raven_img_recorder"
+    type="img_bag_reader_png.py"
+    name="img_bag_reader3"
+    args="camera3"
+  />
+
+  <node
+    pkg="raven_img_recorder"
+    type="raven_state_bag_reader.py"
+    name="raven_state_bag_reader"
+  />
+
+</launch>
